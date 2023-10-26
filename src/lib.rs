@@ -1,3 +1,6 @@
+pub mod dummy_hdm;
+pub mod hardware_data_manager;
+
 pub fn add(left: usize, right: usize) -> usize {
     left + right
 }
