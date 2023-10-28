@@ -2,7 +2,7 @@ use std::thread::sleep;
 use std::time::Duration;
 
 use cg::dummy_hdm::DummyHdm;
-use cg::hardware_data_manager::*;
+use cg::hardware_data_manager::HardwareDataManager;
 
 fn main() {
     let mut hdm = DummyHdm::new();

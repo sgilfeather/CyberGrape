@@ -40,8 +40,10 @@ impl HardwareDataManager for DummyHdm {
                         Signal::Stop => running = false,
                     }
                 }
-                th_msgs.lock().unwrap().append(&mut generate_flat_updates(&generate_circular_points(num_pts, range), noise),
-                    );
+                th_msgs.lock().unwrap().append(&mut generate_flat_updates(
+                    &generate_circular_points(num_pts, range),
+                    noise,
+                ));
                 thread::sleep(Duration::from_secs_f32(0.5));
             }
         });
@@ -57,6 +59,8 @@ impl HardwareDataManager for DummyHdm {
     }
 }
 
+// Notice that all we need to implement iterator is a way to get the next
+// element, Rust takes care of the rest.
 impl Iterator for DummyHdm {
     type Item = Update;
     fn next(&mut self) -> Option<Self::Item> {
@@ -64,8 +68,11 @@ impl Iterator for DummyHdm {
     }
 }
 
+// Of course, we can add more functionality beyond what is defined in the
+// traits. Here are some control functions.
 impl DummyHdm {
     pub fn set_blockcount(&self, block_count: usize) {
+        // Calling `.unwrap()` because we want to panic if the `.send()` fails.
         self.tx.send(Signal::NumPts(block_count)).unwrap();
     }
     pub fn set_noise(&self, noise: f64) {
@@ -75,13 +82,23 @@ impl DummyHdm {
         self.tx.send(Signal::Range(range)).unwrap();
     }
     pub fn stop(&mut self) {
-        let _ = self.tx.send(Signal::Stop);
+        self.tx.send(Signal::Stop).unwrap();
+        // We have to do this `Option` and `.take()` nonsense because calling
+        // `.join()` on a `JoinHandle` moves the `JoinHandle` out of the calling
+        // scope, which we couldn't do with this struct. The `.take()` brings
+        // the `JoinHandle` into the scope of this function, rather than in the
+        // struct itself, leaving `None` behind. Now we can call `.join()`.
         if let Some(thread) = self.handle.take() {
             thread.join().unwrap();
         }
     }
 }
 
+// `Copy` is what we call types that do not need to be borrowed. This is very
+// similar to pass-by-value in C/C++. Basic types (integers, floats, etc.) are
+// all `Copy`. Fancier things like `String`s are "not `Copy`" because we want
+// to borrow those usually. We cannot manually implement `Copy`, it is just a
+// signal to the compiler. Any type that is `Copy` must also implement `Clone`.
 #[derive(Debug, PartialEq, Clone, Copy)]
 struct Point {
     pub x: f64,
@@ -95,6 +112,10 @@ impl Point {
     }
 }
 
+// `Debug` is for dirty, exhaustive, and specific output; the kind that the
+// compiler can come up with. If we want something that looks nicer, we use
+// another trait, `Display`. This one cannot be `#[derive()]`d, since asthetics
+// are not something the compiler cares about, so we implement it ourselves.
 impl Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({:.3}, {:.3})", self.x, self.y)
@@ -153,6 +174,7 @@ fn unflatten_updates(updates: &[Update], noise: f64) -> VecDeque<Update> {
         .collect()
 }
 
+// Unit tests in Rust are fantastic. Just look!
 #[cfg(test)]
 mod tests {
     use super::*;
