@@ -7,7 +7,7 @@ use cg::hardware_data_manager::HardwareDataManager;
 fn main() {
     let mut hdm = DummyHdm::new();
 
-    hdm.set_blockcount(11);
+    hdm.set_blockcount(4);
 
     let mut empty_polls = 0;
     while empty_polls < 2000 {

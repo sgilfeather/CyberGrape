@@ -123,7 +123,7 @@ impl Display for Point {
 }
 
 fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
-    (0..num_points)
+    let mut others: Vec<_> = (0..num_points)
         .map(|v| -> Radian { (v as f64 / num_points as f64) * 2.0 * PI })
         .map(|angle: Radian| -> Point {
             Point {
@@ -131,7 +131,14 @@ fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
                 y: angle.sin() * range,
             }
         })
-        .collect()
+        .collect();
+
+    others.push(Point {
+        x: 0.0,
+        y: 0.0
+    });
+
+    return others;
 }
 
 fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
@@ -147,7 +154,7 @@ fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
                 .map(|(j, &p2)| -> Update {
                     let dx = p2.x - p1.x + rng.gen_range(-noise..noise);
                     let dy = p2.y - p1.y + rng.gen_range(-noise..noise);
-                    let azimuth = (dy / dx).atan();
+                    let azimuth = dy.atan2(dx);
                     Update {
                         src: i,
                         dst: j,
@@ -187,6 +194,7 @@ mod tests {
             Point { x: 0.0, y: 1.0 },
             Point { x: -1.0, y: 0.0 },
             Point { x: 0.0, y: -1.0 },
+            Point { x: 0.0, y: 0.0 },
         ];
 
         generated_points
