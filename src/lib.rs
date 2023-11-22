@@ -32,7 +32,6 @@ mod tests {
     fn ph_bin_is_destroyed() {
         let mut res = bn_create();
         bn_destroy(&mut res);
-        dbg!(res);
-        assert!(false);
+        assert!(res.is_null());
     }
 }
