@@ -11,24 +11,14 @@ env:
 
 jobs:
   build:
+
     runs-on: macos-latest
+
     steps:
     - uses: actions/checkout@v3
       with:
           submodules: "true"
     - name: Build
       run: cargo build --verbose
-    - uses: actions/upload-artifact@v3
-      with:
-        name: target-dir
-        path: target/
-
-  test:
-    needs: build
-    runs-on: macos-latest
-    steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: target-dir
-      - name: Test
-        run: cargo test --verbose
+    - name: Run tests
+      run: cargo test --verbose
