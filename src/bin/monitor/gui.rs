@@ -100,6 +100,9 @@ fn run_app<B: Backend>(
     }
 }
 
+
+// ISSUE 35
+// Need to set the bounds and labels automatically based on the data we get
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chart = Chart::new(vec![
         Dataset::default()
