@@ -1,7 +1,6 @@
 use std::path::PathBuf;
 
 fn main() {
-
     // Get a full path to the SAF library source tree
     let libdir_path = PathBuf::from("libsaf")
         .canonicalize()

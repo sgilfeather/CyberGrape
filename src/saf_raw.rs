@@ -1,5 +1,5 @@
 //! This module places the unsafe SAF rust bindings in the crate under their
-//! own namespace. 
+//! own namespace.
 
 // We need all of these so that the compiler doesn't get angry about the
 // C naming conventions and unused functions.
