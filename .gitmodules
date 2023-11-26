@@ -1,0 +1,3 @@
+[submodule "libsaf"]
+	path = libsaf
+	url = git@github.com:leomccormack/Spatial_Audio_Framework.git
