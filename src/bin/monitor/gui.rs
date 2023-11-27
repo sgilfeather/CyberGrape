@@ -17,7 +17,9 @@ use tui::{
     Frame, Terminal,
 };
 
-type PointGenerator = Box<dyn FnMut() -> Vec<(f64, f64)>>;
+use cg::Point;
+
+type PointGenerator = Box<dyn FnMut() -> Vec<Point>>;
 
 struct App {
     orig_points_generator: PointGenerator,
@@ -37,8 +39,14 @@ impl App {
     }
 
     fn on_tick(&mut self) {
-        self.orig_points = (self.orig_points_generator)();
-        self.new_points = (self.new_points_generator)();
+        self.orig_points = (self.orig_points_generator)()
+            .iter()
+            .map(|&Point { x, y }| (x, y))
+            .collect();
+        self.new_points = (self.new_points_generator)()
+            .iter()
+            .map(|&Point { x, y }| (x, y))
+            .collect();
     }
 }
 
@@ -99,7 +107,6 @@ fn run_app<B: Backend>(
         }
     }
 }
-
 
 // ISSUE 35
 // Need to set the bounds and labels automatically based

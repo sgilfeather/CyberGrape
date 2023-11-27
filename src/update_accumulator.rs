@@ -1,12 +1,21 @@
-use std::{sync::{Arc, Mutex}, collections::HashMap, rc::Rc, cell::RefCell};
-use crate::hardware_data_manager::{HardwareDataManager, Update, Id};
+use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
-pub struct UpdateAccumulator<Hdm> where Hdm: HardwareDataManager {
+pub struct UpdateAccumulator<Hdm>
+where
+    Hdm: HardwareDataManager,
+{
     hdm_handle: Arc<Mutex<Hdm>>,
-    accumulated_updates: HashMap<(Id, Id), Update>
+    accumulated_updates: HashMap<(Id, Id), Update>,
 }
 
-impl <Hdm> UpdateAccumulator<Hdm> where Hdm: HardwareDataManager {
+impl<Hdm> UpdateAccumulator<Hdm>
+where
+    Hdm: HardwareDataManager,
+{
     pub fn new(hdm_handle: Arc<Mutex<Hdm>>) -> Self {
         Self {
             hdm_handle,
@@ -18,4 +27,3 @@ impl <Hdm> UpdateAccumulator<Hdm> where Hdm: HardwareDataManager {
         todo!()
     }
 }
-
