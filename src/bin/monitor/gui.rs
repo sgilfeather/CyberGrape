@@ -17,7 +17,7 @@ use tui::{
     Frame, Terminal,
 };
 
-type PointGenerator = Box<dyn Fn() -> Vec<(f64, f64)>>;
+type PointGenerator = Box<dyn FnMut() -> Vec<(f64, f64)>>;
 
 struct App {
     orig_points_generator: PointGenerator,
@@ -102,7 +102,9 @@ fn run_app<B: Backend>(
 
 
 // ISSUE 35
-// Need to set the bounds and labels automatically based on the data we get
+// Need to set the bounds and labels automatically based
+// on the data in app.*_points
+// Also would be good to get the axis lines in the middle, or gone
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chart = Chart::new(vec![
         Dataset::default()

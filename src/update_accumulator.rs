@@ -1,4 +1,4 @@
-use std::{sync::{Arc, Mutex}, collections::HashMap};
+use std::{sync::{Arc, Mutex}, collections::HashMap, rc::Rc, cell::RefCell};
 use crate::hardware_data_manager::{HardwareDataManager, Update, Id};
 
 pub struct UpdateAccumulator<Hdm> where Hdm: HardwareDataManager {
@@ -13,7 +13,7 @@ impl <Hdm> UpdateAccumulator<Hdm> where Hdm: HardwareDataManager {
             accumulated_updates: HashMap::new(),
         }
     }
-    pub fn get_status(&self) -> Vec<Update> {
+    pub fn get_status(&mut self) -> Vec<Update> {
         // ISSUE 38
         todo!()
     }

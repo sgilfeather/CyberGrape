@@ -17,7 +17,7 @@ fn main() {
     hdm.lock().unwrap().set_blockcount(4);
 
     let update_acc_hdm_handle = hdm_mtx.clone();
-    let update_acc = UpdateAccumulator::new(update_acc_hdm_handle);
+    let mut update_acc = UpdateAccumulator::new(update_acc_hdm_handle);
 
     let debug_hdm_hande = hdm_mtx.clone();
 
