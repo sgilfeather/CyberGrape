@@ -7,6 +7,7 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+
 pub struct DummyHdm {
     handle: Option<thread::JoinHandle<()>>,
     tx: mpsc::Sender<Signal>,
@@ -91,6 +92,10 @@ impl DummyHdm {
         if let Some(thread) = self.handle.take() {
             thread.join().unwrap();
         }
+    }
+
+    pub fn get_debug_locations(&self) -> Vec<(f64, f64)> {
+        todo!(); // ISSUE 36
     }
 }
 
