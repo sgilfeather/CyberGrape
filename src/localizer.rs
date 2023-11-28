@@ -1,5 +1,6 @@
 use crate::hardware_data_manager::Update;
+use crate::Point;
 
-pub fn localize_points(measurements: &[Update]) -> Vec<(f64, f64)> {
+pub fn localize_points(_measurements: &[Update]) -> Vec<Point> {
     todo!() // ISSUE 34
 }

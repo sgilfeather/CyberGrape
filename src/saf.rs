@@ -6,7 +6,7 @@ pub fn bn_create() -> *mut c_void {
     unsafe {
         let mut h_bin = std::ptr::null_mut();
         saf_raw::binauraliserNF_create(std::ptr::addr_of_mut!(h_bin));
-        return h_bin;
+        h_bin
     }
 }
 
