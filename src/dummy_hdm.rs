@@ -99,10 +99,10 @@ impl DummyHdm {
                         Signal::Stop => running = false,
                     }
                 }
-                th_msgs.lock().unwrap().append(&mut generate_flat_updates(
-                    &th_debug_coords,
-                    b.noise,
-                ));
+                th_msgs
+                    .lock()
+                    .unwrap()
+                    .append(&mut generate_flat_updates(&th_debug_coords, b.noise));
                 thread::sleep(Duration::from_secs_f64(b.delay));
             }
         });
@@ -111,10 +111,10 @@ impl DummyHdm {
             handle: Some(handle),
             tx,
             msgs,
-            debug_coordinates 
+            debug_coordinates,
         }
     }
-    
+
     pub fn builder() -> DummyHdmBuilder {
         DummyHdmBuilder::new()
     }
