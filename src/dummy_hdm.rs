@@ -65,7 +65,7 @@ enum Signal {
 impl HardwareDataManager for DummyHdm {
     fn new() -> Self {
         let b = DummyHdmBuilder::new();
-        Self::new_from_builder(b)   // invokes DummyHdm::new_from_builder
+        Self::new_from_builder(b) // invokes DummyHdm::new_from_builder
     }
 
     fn clear(&mut self) {
@@ -103,11 +103,10 @@ impl DummyHdm {
                         Signal::Stop => running = false,
                     }
                 }
-                // add flat updates (created from circular points) to th_msgs
-                th_msgs.lock().unwrap().append(&mut generate_flat_updates(
-                    &th_debug_coords,
-                    b.noise,
-                ));
+                th_msgs
+                    .lock()
+                    .unwrap()
+                    .append(&mut generate_flat_updates(&th_debug_coords, b.noise));
                 thread::sleep(Duration::from_secs_f64(b.delay));
             }
         });
@@ -116,10 +115,10 @@ impl DummyHdm {
             handle: Some(handle),
             tx,
             msgs,
-            debug_coordinates 
+            debug_coordinates,
         }
     }
-    
+
     pub fn builder() -> DummyHdmBuilder {
         DummyHdmBuilder::new()
     }
@@ -141,14 +140,13 @@ impl DummyHdm {
     }
 }
 
-
 /** generate_circular_points()
  * @brief   Given a num_points, generate num_points angle measurements in radians,
  *          distributed evenly around a circle. Then, convert these angles into
  *          2D Cartesian Points around a circle with radius range
  * @param   num_points  Number of points to generate
  * @param   range       Distance of each point from center { 0, 0 }
- * @returns Vector of all generated points 
+ * @returns Vector of all generated points
  */
 fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     let mut others: Vec<_> = (0..num_points)
@@ -166,9 +164,8 @@ fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     others
 }
 
-
 /** generate_flat_updates()
- * @brief   Given an array of Points, generate Updates that describe the 
+ * @brief   Given an array of Points, generate Updates that describe the
  *          azimuth between all possible pairs of Points (with some noise)
  * @param   points  Array of circular Points generated from generate_circular_points()
  * @param   noise   Level of noisiness for produced updates
@@ -179,7 +176,7 @@ fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
     points
         .iter()
         // for each Point, produce the pair (i, Point)
-        .enumerate() 
+        .enumerate()
         // from a list of pairs [(i, Point)], map to produce the list of pairs
         // [(i_res, Point_res)], then flatten to [i_res, Point_res, i_res...]
         .flat_map(|(i, &p1)| -> Vec<Update> {
@@ -195,7 +192,7 @@ fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
                     Update {
                         src: i,
                         dst: j,
-                        elv: 0.0,   // working in a flat 2D plane, for now
+                        elv: 0.0, // working in a flat 2D plane, for now
                         azm: azimuth,
                     }
                 })
