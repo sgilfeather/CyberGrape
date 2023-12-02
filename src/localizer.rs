@@ -1,5 +1,6 @@
 use crate::hardware_data_manager::Update;
 use crate::Point;
+use std::f64::consts::PI;
 
 /** localize_points()
  * @brief   Given a list of `Update` structs, computes the positions of the blocks
@@ -15,12 +16,9 @@ pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
             m.src, m.dst, m.elv, m.azm
         );
     }
-    eprintln!("ALL UPDATES");
-    measurements.iter().for_each(|u| print_update(&u));
-    // end debug code
 
     // For now, assume constant range
-    let range = 1.0;
+    let range = 8.0;
 
     // For now, generate points just based on angles FROM listener
     // no duplicate updates for the same src, dst pair
@@ -31,8 +29,10 @@ pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
         .map(|m| {
             print_update(m); // TODO: remove
                              // working in the 2D plan, elv is 0 for now
-            let x = range * m.azm.cos() * m.elv.sin();
-            let y = range * m.azm.sin() * m.elv.sin();
+            let elv = PI / 2.0 - m.elv;
+            let x = range * m.azm.cos() * elv.sin();
+            let y = range * m.azm.sin() * elv.sin();
+            eprintln!("x={:?}, y={:?}", x, y); // TODO: remove
             Point { x, y }
         })
         .collect()
