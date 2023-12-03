@@ -8,15 +8,6 @@ use std::f64::consts::PI;
  * @returns A vector of Points
  */
 pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
-    // Debug printing code!!
-    // TODO: remove
-    fn print_update(m: &Update) {
-        eprintln!(
-            "src={:?}, dst={:?}, elv={:?}, azm={:?}",
-            m.src, m.dst, m.elv, m.azm
-        );
-    }
-
     // For now, assume constant range
     let range = 8.0;
 
@@ -27,12 +18,10 @@ pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
         .iter()
         .filter(|m| m.src == 0)
         .map(|m| {
-            // print_update(m); // TODO: remove
             // working in the 2D plan, elv is 0 for now
             let elv = PI / 2.0 - m.elv;
             let x = range * m.azm.cos() * elv.sin();
             let y = range * m.azm.sin() * elv.sin();
-            // eprintln!("x={:?}, y={:?}", x, y); // TODO: remove
             Point { x, y }
         })
         .collect()
