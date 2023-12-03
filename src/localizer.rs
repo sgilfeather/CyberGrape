@@ -27,12 +27,12 @@ pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
         .iter()
         .filter(|m| m.src == 0)
         .map(|m| {
-            print_update(m); // TODO: remove
-                             // working in the 2D plan, elv is 0 for now
+            // print_update(m); // TODO: remove
+            // working in the 2D plan, elv is 0 for now
             let elv = PI / 2.0 - m.elv;
             let x = range * m.azm.cos() * elv.sin();
             let y = range * m.azm.sin() * elv.sin();
-            eprintln!("x={:?}, y={:?}", x, y); // TODO: remove
+            // eprintln!("x={:?}, y={:?}", x, y); // TODO: remove
             Point { x, y }
         })
         .collect()

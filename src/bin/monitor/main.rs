@@ -9,7 +9,11 @@ use cg::update_accumulator::UpdateAccumulator;
 use gui::engage_gui;
 
 fn main() {
-    let hdm = DummyHdm::builder().num_points(10).range(5.0).build();
+    let hdm = DummyHdm::builder()
+        .num_points(10)
+        .range(5.0)
+        .noise(0.25)
+        .build();
     let hdm_mtx = Rc::new(RefCell::new(hdm));
     let hdm = hdm_mtx.clone();
 

@@ -24,7 +24,6 @@ where
             self.accumulated_updates
                 .insert((update.src, update.dst), update);
         }
-
         self.accumulated_updates.values().cloned().collect()
     }
 }

@@ -159,7 +159,7 @@ fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
         })
         .collect();
 
-    others.push(Point { x: 0.0, y: 0.0 });
+    others.insert(0, Point { x: 0.0, y: 0.0 });
 
     others
 }
