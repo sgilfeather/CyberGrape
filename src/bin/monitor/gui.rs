@@ -8,7 +8,7 @@ use std::{
     io,
     time::{Duration, Instant},
 };
-use tui::{
+use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Style},
     symbols,
@@ -112,7 +112,7 @@ fn run_app<B: Backend>(
 // Need to set the bounds and labels automatically based
 // on the data in app.*_points
 // Also would be good to get the axis lines in the middle, or gone
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn ui(f: &mut Frame, app: &mut App) {
     let chart = Chart::new(vec![
         Dataset::default()
             .name("Original")
