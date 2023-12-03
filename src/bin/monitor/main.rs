@@ -9,14 +9,18 @@ use cg::update_accumulator::UpdateAccumulator;
 use gui::engage_gui;
 
 fn main() {
-    let hdm = DummyHdm::builder().num_points(10).range(5.0).build();
-    let hdm_mtx = Rc::new(RefCell::new(hdm));
-    let hdm = hdm_mtx.clone();
+    let hdm = DummyHdm::builder()
+        .num_points(10)
+        .range(5.0)
+        .noise(0.25)
+        .build();
+    let hdm_rf = Rc::new(RefCell::new(hdm));
+    let hdm = hdm_rf.clone();
 
-    let update_acc_hdm_handle = hdm_mtx.clone();
+    let update_acc_hdm_handle = hdm_rf.clone();
     let mut update_acc = UpdateAccumulator::new(update_acc_hdm_handle);
 
-    let debug_hdm_handle = hdm_mtx.clone();
+    let debug_hdm_handle = hdm_rf.clone();
 
     let _ = engage_gui(
         Box::new(move || debug_hdm_handle.borrow().get_debug_locations()),
