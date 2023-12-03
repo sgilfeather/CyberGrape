@@ -9,7 +9,7 @@ use std::f64::consts::PI;
  */
 pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
     // For now, assume constant range
-    let range = 8.0;
+    let range = 6.0;
 
     // For now, generate points just based on angles FROM listener
     // no duplicate updates for the same src, dst pair

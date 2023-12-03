@@ -108,11 +108,24 @@ fn run_app<B: Backend>(
     }
 }
 
-// ISSUE 35
-// Need to set the bounds and labels automatically based
-// on the data in app.*_points
-// Also would be good to get the axis lines in the middle, or gone
 fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+    // Padding added to the bounds of the chart
+    let padding = 2.0;
+
+    // Collect all the x and y values from orig_points and new_points
+    let all_x = app.orig_points.iter().map(|(x, _)| x);
+    let all_y = app.orig_points.iter().map(|(_, y)| y);
+
+    // Compute lower and upper bounds for the chart
+    let x_bounds = [
+        all_x.clone().fold(f64::INFINITY, |a, b| a.min(*b)) - padding,
+        all_x.clone().fold(f64::NEG_INFINITY, |a, b| a.max(*b)) + padding,
+    ];
+    let y_bounds = [
+        all_y.clone().fold(f64::INFINITY, |a, b| a.min(*b)) - padding,
+        all_y.clone().fold(f64::NEG_INFINITY, |a, b| a.max(*b)) + padding,
+    ];
+
     let chart = Chart::new(vec![
         Dataset::default()
             .name("Original")
@@ -128,32 +141,8 @@ fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
             .data(&app.new_points),
     ])
     .block(Block::default().title("Chart"))
-    .x_axis(
-        Axis::default()
-            .title(Span::styled("X Axis", Style::default().fg(Color::Red)))
-            .style(Style::default().fg(Color::White))
-            .bounds([-10.0, 10.0])
-            .labels(
-                ["-10.0", "-5.0", "0.0", "5.0", "10.0"]
-                    .iter()
-                    .cloned()
-                    .map(Span::from)
-                    .collect(),
-            ),
-    )
-    .y_axis(
-        Axis::default()
-            .title(Span::styled("Y Axis", Style::default().fg(Color::Red)))
-            .style(Style::default().fg(Color::White))
-            .bounds([-10.0, 10.0])
-            .labels(
-                ["-10.0", "-5.0", "0.0", "5.0", "10.0"]
-                    .iter()
-                    .cloned()
-                    .map(Span::from)
-                    .collect(),
-            ),
-    );
+    .x_axis(Axis::default().bounds(x_bounds))
+    .y_axis(Axis::default().bounds(y_bounds));
 
     f.render_widget(chart, f.size());
 }
