@@ -224,11 +224,11 @@ mod tests {
     fn generate_some_points() {
         let generated_points = generate_circular_points(4, 1.0);
         let real_points = vec![
+            Point { x: 0.0, y: 0.0 },
             Point { x: 1.0, y: 0.0 },
             Point { x: 0.0, y: 1.0 },
             Point { x: -1.0, y: 0.0 },
             Point { x: 0.0, y: -1.0 },
-            Point { x: 0.0, y: 0.0 },
         ];
 
         generated_points
