@@ -108,7 +108,7 @@ fn run_app<B: Backend>(
     }
 }
 
-fn ui<B: Backend>(f: &mut Frame<B>, app: &mut App) {
+fn ui(f: &mut Frame, app: &mut App) {
     // Padding added to the bounds of the chart
     let padding = 2.0;
 
