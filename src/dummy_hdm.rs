@@ -83,12 +83,12 @@ impl Iterator for DummyHdm {
 }
 
 // Of course, we can add more functionality beyond what is defined in the
-// traits. Here are some control functions.
+// traits. Here are functions to instantiate from a DummyHdmBuilder, get a
+// builder, stop the HDM, and get the debug locations.
 impl DummyHdm {
     fn new_from_builder(b: DummyHdmBuilder) -> Self {
         let (tx, rx) = mpsc::channel::<Signal>();
         let msgs = Arc::new(Mutex::new(VecDeque::new()));
-        // TODO: Skylar to learn what is th_?
         let th_msgs = Arc::clone(&msgs);
 
         let debug_coordinates = generate_circular_points(b.num_points, b.range);
@@ -119,10 +119,13 @@ impl DummyHdm {
         }
     }
 
+    /// Emits a Builder that allows a user to configure a custom HDM
+    /// Call `.build()` on the resulting object to instantiate an HDM.
     pub fn builder() -> DummyHdmBuilder {
         DummyHdmBuilder::new()
     }
 
+    /// Tells the HDM to stop generating updates
     pub fn stop(&mut self) {
         self.tx.send(Signal::Stop).unwrap();
         // We have to do this `Option` and `.take()` nonsense because calling
@@ -135,19 +138,15 @@ impl DummyHdm {
         }
     }
 
+    /// Returns the **true** locations of the objects in the dummy HDM.
     pub fn get_debug_locations(&self) -> Vec<Point> {
         self.debug_coordinates.clone()
     }
 }
 
-/** generate_circular_points()
- * @brief   Given a num_points, generate num_points angle measurements in radians,
- *          distributed evenly around a circle. Then, convert these angles into
- *          2D Cartesian Points around a circle with radius range
- * @param   num_points  Number of points to generate
- * @param   range       Distance of each point from center { 0, 0 }
- * @returns Vector of all generated points
- */
+/// Given a num_points, generate num_points angle measurements in radians,
+/// distributed evenly around a circle. Then, convert these angles into
+/// 2D Cartesian Points around a circle with radius range.
 fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     let mut others: Vec<_> = (0..num_points)
         .map(|v| -> Radian { (v as f64 / num_points as f64) * 2.0 * PI })
@@ -164,21 +163,19 @@ fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     others
 }
 
-/** generate_flat_updates()
- * @brief   Given an array of Points, generate Updates that describe the
- *          azimuth between all possible pairs of Points (with some noise)
- * @param   points  Array of circular Points generated from generate_circular_points()
- * @param   noise   Level of noisiness for produced updates
- * @returns A VecDeque of Updates
- */
+/// Given an array of Points, generate Updates that describe the azimuth
+/// between all possible pairs of Points (with some noise).
+///
+/// All updates are "flat" for this function, meaning that they have
+/// zero elevation.
 fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
     let mut rng = thread_rng();
     points
         .iter()
-        // for each Point, produce the pair (i, Point)
         .enumerate()
-        // from a list of pairs [(i, Point)], map to produce the list of pairs
-        // [(i_res, Point_res)], then flatten to [i_res, Point_res, i_res...]
+        // flat_map first maps, then flattens the result. We need this because
+        // we are going to generate a vector of updates for each point, then
+        // flatten
         .flat_map(|(i, &p1)| -> Vec<Update> {
             points
                 .iter()
@@ -197,6 +194,9 @@ fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
                     }
                 })
                 .collect()
+            // now we have all of the updates from p1, so we do that for all
+            // possible p1s, and flatten the resulting update vectors
+            // into one big vector
         })
         .collect()
 }
@@ -224,11 +224,11 @@ mod tests {
     fn generate_some_points() {
         let generated_points = generate_circular_points(4, 1.0);
         let real_points = vec![
+            Point { x: 0.0, y: 0.0 },
             Point { x: 1.0, y: 0.0 },
             Point { x: 0.0, y: 1.0 },
             Point { x: -1.0, y: 0.0 },
             Point { x: 0.0, y: -1.0 },
-            Point { x: 0.0, y: 0.0 },
         ];
 
         generated_points
