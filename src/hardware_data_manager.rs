@@ -15,6 +15,11 @@ pub type Id = usize;
 // The second, `Clone`, means that the `.clone()` method can be called on the
 // struct to make a copy. All nested types must implement `Clone` for this
 // to work.
+
+/// This struct represents a radial measurement taken from `src` to `dst`. `azm`
+/// represents the radians of the angle from `src` to `dst` in the x/y plane, 
+/// which we call the "azimuth". `elv` represents the angle from `src` to `dst`
+/// _above_ the x/y plane, this is called "elevation".
 #[derive(Debug, Clone)]
 pub struct Update {
     pub src: Id,

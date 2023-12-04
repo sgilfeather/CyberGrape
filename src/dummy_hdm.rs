@@ -1,3 +1,5 @@
+//! TODO
+
 use crate::hardware_data_manager::*;
 use crate::Point;
 use rand::prelude::*;
@@ -7,6 +9,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+/// A dummy implementation of a `HardwareDataManager` that currently pretends
+/// that there is a static circle of sound sources around the listener
 pub struct DummyHdm {
     handle: Option<thread::JoinHandle<()>>,
     tx: mpsc::Sender<Signal>,
@@ -14,6 +18,7 @@ pub struct DummyHdm {
     debug_coordinates: Vec<Point>,
 }
 
+/// A utility struct that enables configuration of the `DummyHdm`
 pub struct DummyHdmBuilder {
     num_points: usize,
     noise: f64,
@@ -22,6 +27,7 @@ pub struct DummyHdmBuilder {
 }
 
 impl DummyHdmBuilder {
+    /// Instantiates a `DummyHdmBuilder` with default values
     fn new() -> Self {
         Self {
             num_points: 1,
@@ -31,27 +37,31 @@ impl DummyHdmBuilder {
         }
     }
 
-    // setters
+    /// Sets the number of sound sources around the listener.
     pub fn num_points(mut self, num_points: usize) -> Self {
         self.num_points = num_points;
         self
     }
 
+    /// Sets the "noise" in the simulated measurements of angles
     pub fn noise(mut self, noise: f64) -> Self {
         self.noise = noise;
         self
     }
 
+    /// Defines how far the ring of sound sources is from the listener.
     pub fn range(mut self, range: f64) -> Self {
         self.range = range;
         self
     }
 
+    /// Sets the delay between update calculations in the `DummyHdm`.
     pub fn delay(mut self, delay: f64) -> Self {
         self.delay = delay;
         self
     }
 
+    /// Consumes the builder, instantiating and starting a new `DummyHdm`.
     pub fn build(self) -> DummyHdm {
         DummyHdm::new_from_builder(self)
     }
@@ -63,11 +73,13 @@ enum Signal {
 
 // HardwareDataManager inherits from DummyHdm
 impl HardwareDataManager for DummyHdm {
+    /// Instante an instance with default settings.
     fn new() -> Self {
         let b = DummyHdmBuilder::new();
         Self::new_from_builder(b) // invokes DummyHdm::new_from_builder
     }
 
+    /// Empty the update queue
     fn clear(&mut self) {
         self.msgs.lock().unwrap().clear();
     }
@@ -78,6 +90,8 @@ impl HardwareDataManager for DummyHdm {
 impl Iterator for DummyHdm {
     type Item = Update;
     fn next(&mut self) -> Option<Self::Item> {
+        // aquire the lock on the update queue, then remove and return the
+        // first element
         self.msgs.lock().unwrap().pop_front()
     }
 }
@@ -86,27 +100,52 @@ impl Iterator for DummyHdm {
 // traits. Here are functions to instantiate from a DummyHdmBuilder, get a
 // builder, stop the HDM, and get the debug locations.
 impl DummyHdm {
+    /// Instantiates and starts a dummy hardware data manager from a `DummyHdmBuilder`
+    ///
+    /// Will continue to run and create new updates until `.stop()` is called.
     fn new_from_builder(b: DummyHdmBuilder) -> Self {
+        // Create a communication channel so that we can tell this thing to stop
         let (tx, rx) = mpsc::channel::<Signal>();
+
+        // `Arc<Mutex<T>>` allows thread-safe access to a data structure. `Arc`
+        // stands for an "atomic, reference-counted" pointer, meaning that the
+        // data will live as long as there is a reference to it, and references
+        // can be passed between threads. The `Mutex` ensures that only one
+        // thread has access to the data at a time
         let msgs = Arc::new(Mutex::new(VecDeque::new()));
+
+        // This is the reference to the update queue that is going to be
+        // passed into the thread
         let th_msgs = Arc::clone(&msgs);
 
+        // Generate the true coordinates of the objects once
         let debug_coordinates = generate_circular_points(b.num_points, b.range);
+
+        // We need to make a clone because it is going to be moved in to the thread,
+        // and we need to have access for debug purposes out here in the struct
         let th_debug_coords = debug_coordinates.clone();
 
+        // The closure passed in to `thread::spawn` is going to run in its own
+        // thread! `move` means that the closure is going to take ownership of
+        // every value that is captured (th_debug_coords, b.noise, and b.delay)
+        // rather than trying to borrow them.
         let handle = thread::spawn(move || {
             let mut running = true;
             while running {
-                // if we receive a Signal::Stop, stop
+                // if we receive a Signal::Stop, stop looping
                 if let Ok(received) = rx.try_recv() {
                     match received {
                         Signal::Stop => running = false,
                     }
                 }
+                // insert a fresh batch of updates into the update queue we need
+                // to take the lock on the queue so that no one can muck with it
+                // while we are appending to it
                 th_msgs
                     .lock()
                     .unwrap()
                     .append(&mut generate_flat_updates(&th_debug_coords, b.noise));
+
                 thread::sleep(Duration::from_secs_f64(b.delay));
             }
         });
@@ -207,6 +246,8 @@ fn unflatten_updates(updates: &[Update], noise: f64) -> VecDeque<Update> {
     updates
         .iter()
         .map(|u| -> Update {
+            // Here we are using the "struct update syntax" to create a new
+            // update with the same src, dst, and azm; but with a nonzero elv.
             Update {
                 elv: rng.gen_range(-noise..noise),
                 ..u.clone()

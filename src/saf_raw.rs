@@ -1,4 +1,4 @@
-//! This module places the unsafe SAF rust bindings in the crate under their
+//! This module places unsafe SAF rust bindings in the crate under their
 //! own namespace.
 
 // We need all of these so that the compiler doesn't get angry about the

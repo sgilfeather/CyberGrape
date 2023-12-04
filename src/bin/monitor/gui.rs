@@ -1,3 +1,6 @@
+//! A GUI that displays the localized points on top of the original data to
+//! show how good/bad our localization algorithm is.
+
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -19,8 +22,27 @@ use tui::{
 
 use cg::Point;
 
+// This is a function pointer in Rust! The important bit is on the right side. The
+// FnMut says that it is a function, () means that it takes no arguments, and 
+// -> Vec<Point> means that it returns a vector of Points. The whole thing put
+// together, FunMut() -> Vec<Point>, is **not** a type!! It is a trait. Every 
+// individual function in Rust is its own type, but it implements a trait that
+// describes its arguments and return values. FunMut() -> Vec<Point> is one of
+// those such traits.
+//
+// We wrap it in a Box<dyn T> to indicate that we want a value that implements
+// the trait, because you can't have something that just implements a trait, it
+// needs to be a full type. This is basically saying that we will take a Box that
+// contains anything that implements the FunMut() -> Vec<Point> trait. It needs to
+// be in a Box because the function itself could be of a variable size, so it must
+// be allocated on the heap, hence the Box. 
 type PointGenerator = Box<dyn FnMut() -> Vec<Point>>;
 
+/// This struct contains function pointers that generate original/debug points
+/// and the new/calculated points that come out of the localization algorithm.
+/// It also contains vectors that have the "unwrapped" versions of those points. We
+/// need those because we draw the screen very frequently, and we don't necessarily
+/// want to run the localization algorithm on every re-draw.
 struct App {
     orig_points_generator: PointGenerator,
     new_points_generator: PointGenerator,
@@ -38,6 +60,8 @@ impl App {
         }
     }
 
+    // Call the functions that generate points, and store those points in the Vecs.
+    // This function is called every "tick", 4 times per second in this case.
     fn on_tick(&mut self) {
         self.orig_points = (self.orig_points_generator)()
             .iter()
@@ -89,11 +113,14 @@ fn run_app<B: Backend>(
 ) -> io::Result<()> {
     let mut last_tick = Instant::now();
     loop {
+        // This loop iterates **super** fast. So we are redrawing the UI all the time.
         terminal.draw(|f| ui(f, &mut app))?;
 
         let timeout = tick_rate
             .checked_sub(last_tick.elapsed())
             .unwrap_or_else(|| Duration::from_secs(0));
+
+        // If the user hits 'q', quit.
         if crossterm::event::poll(timeout)? {
             if let Event::Key(key) = event::read()? {
                 if let KeyCode::Char('q') = key.code {
@@ -101,6 +128,8 @@ fn run_app<B: Backend>(
                 }
             }
         }
+
+        // Every quarter second, call the on_tick function.
         if last_tick.elapsed() >= tick_rate {
             app.on_tick();
             last_tick = Instant::now();
