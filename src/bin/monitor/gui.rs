@@ -10,7 +10,6 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Style},
     symbols,
-    text::Span,
     widgets::{Axis, Block, Chart, Dataset, GraphType},
     Frame, Terminal,
 };
