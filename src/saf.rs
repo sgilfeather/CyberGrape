@@ -1,7 +1,10 @@
+//! A safe api into the Spatial Audio Framework.
+
 use crate::saf_raw;
 
 use libc::c_void;
 
+/// TODO
 pub fn bn_create() -> *mut c_void {
     unsafe {
         let mut h_bin = std::ptr::null_mut();
@@ -10,6 +13,7 @@ pub fn bn_create() -> *mut c_void {
     }
 }
 
+/// TODO
 pub fn bn_destroy(h_bin: &mut *mut c_void) {
     unsafe {
         saf_raw::binauraliserNF_destroy(h_bin);

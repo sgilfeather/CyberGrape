@@ -1,15 +1,14 @@
+//! TODO
+
 use crate::hardware_data_manager::Update;
 use crate::Point;
 use std::f64::consts::PI;
 
-/** localize_points()
- * @brief   Given a list of `Update` structs, computes the positions of the blocks
- * @param   Array of Updates, which describe a block's rough azimuth relative to another
- * @returns A vector of Points
- */
+/// Given a list of `Update` structs containing the angular measurements between
+/// points, computes the cartesian positions of the points.
 pub fn localize_points(measurements: &[Update]) -> Vec<Point> {
     // For now, assume constant range
-    let range = 6.0;
+    let range = 5.0;
 
     // For now, generate points just based on angles FROM listener
     // no duplicate updates for the same src, dst pair
