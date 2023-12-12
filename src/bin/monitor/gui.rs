@@ -10,7 +10,7 @@ use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Style},
     symbols,
-    widgets::{Axis, Block, Chart, Dataset, GraphType},
+    widgets::{Axis, Chart, Dataset, GraphType},
     Frame, Terminal,
 };
 use std::{
@@ -22,9 +22,9 @@ use std::{
 use cg::Point;
 
 // This is a function pointer in Rust! The important bit is on the right side. The
-// FnMut says that it is a function, () means that it takes no arguments, and 
+// FnMut says that it is a function, () means that it takes no arguments, and
 // -> Vec<Point> means that it returns a vector of Points. The whole thing put
-// together, FunMut() -> Vec<Point>, is **not** a type!! It is a trait. Every 
+// together, FunMut() -> Vec<Point>, is **not** a type!! It is a trait. Every
 // individual function in Rust is its own type, but it implements a trait that
 // describes its arguments and return values. FunMut() -> Vec<Point> is one of
 // those such traits.
@@ -34,7 +34,7 @@ use cg::Point;
 // needs to be a full type. This is basically saying that we will take a Box that
 // contains anything that implements the FunMut() -> Vec<Point> trait. It needs to
 // be in a Box because the function itself could be of a variable size, so it must
-// be allocated on the heap, hence the Box. 
+// be allocated on the heap, hence the Box.
 type PointGenerator = Box<dyn FnMut() -> Vec<Point>>;
 
 /// This struct contains function pointers that generate original/debug points
@@ -85,7 +85,7 @@ pub fn engage_gui(
     let mut terminal = Terminal::new(backend)?;
 
     // create app and run it
-    let tick_rate = Duration::from_millis(250);
+    let tick_rate = Duration::from_millis(10);
     let app = App::new(orig_points_generator, new_points_generator);
     let res = run_app(&mut terminal, app, tick_rate);
 
@@ -156,7 +156,7 @@ fn ui(f: &mut Frame, app: &mut App) {
 
     let chart = Chart::new(vec![
         Dataset::default()
-            .name("Original")
+            .name("True")
             .marker(symbols::Marker::Dot)
             .graph_type(GraphType::Scatter)
             .style(Style::default().fg(Color::Cyan))
@@ -168,7 +168,6 @@ fn ui(f: &mut Frame, app: &mut App) {
             .style(Style::default().fg(Color::Red))
             .data(&app.new_points),
     ])
-    .block(Block::default().title("Chart"))
     .x_axis(Axis::default().bounds(x_bounds))
     .y_axis(Axis::default().bounds(y_bounds));
 
