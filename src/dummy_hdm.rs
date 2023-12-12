@@ -15,7 +15,7 @@ pub struct DummyHdm {
     handle: Option<thread::JoinHandle<()>>,
     tx: mpsc::Sender<Signal>,
     msgs: Arc<Mutex<VecDeque<Update>>>,
-    debug_coordinates: Vec<Point>,
+    debug_coordinates: Arc<Mutex<Vec<Point>>>,
 }
 
 /// A utility struct that enables configuration of the `DummyHdm`
@@ -118,8 +118,10 @@ impl DummyHdm {
         // passed into the thread
         let th_msgs = Arc::clone(&msgs);
 
-        // Generate the true coordinates of the objects once
-        let debug_coordinates = generate_circular_points(b.num_points, b.range);
+        // Generate the true coordinates of the objects, then wrap that in an
+        // Arc<Mutex<_>> so we can access and mutate it from within the thread
+        let debug_coordinates =
+            Arc::new(Mutex::new(generate_circular_points(b.num_points, b.range)));
 
         // We need to make a clone because it is going to be moved in to the thread,
         // and we need to have access for debug purposes out here in the struct
@@ -131,6 +133,9 @@ impl DummyHdm {
         // rather than trying to borrow them.
         let handle = thread::spawn(move || {
             let mut running = true;
+            let rads = 1.0_f64.to_radians();
+            let cos_theta = rads.cos();
+            let sin_theta = rads.sin();
             while running {
                 // if we receive a Signal::Stop, stop looping
                 if let Ok(received) = rx.try_recv() {
@@ -138,15 +143,27 @@ impl DummyHdm {
                         Signal::Stop => running = false,
                     }
                 }
+                thread::sleep(Duration::from_secs_f64(b.delay));
+
+                // After sleeping, get the lock on the true coordinates
+                let mut debug_coords = th_debug_coords.lock().unwrap();
+
                 // insert a fresh batch of updates into the update queue we need
                 // to take the lock on the queue so that no one can muck with it
                 // while we are appending to it
                 th_msgs
                     .lock()
                     .unwrap()
-                    .append(&mut generate_flat_updates(&th_debug_coords, b.noise));
+                    .append(&mut generate_flat_updates(&debug_coords, b.noise));
 
-                thread::sleep(Duration::from_secs_f64(b.delay));
+                // Update the debug coordinates by rotating them 1 degree
+                // clockwise about the origin
+                debug_coords.iter_mut().for_each(|Point { x, y }| {
+                    *x = *x * cos_theta - *y * sin_theta;
+                    *y = *x * sin_theta + *y * cos_theta;
+                });
+
+                // the lock is dropped when it goes out of scope here
             }
         });
 
@@ -179,7 +196,7 @@ impl DummyHdm {
 
     /// Returns the **true** locations of the objects in the dummy HDM.
     pub fn get_debug_locations(&self) -> Vec<Point> {
-        self.debug_coordinates.clone()
+        self.debug_coordinates.lock().unwrap().clone()
     }
 }
 
