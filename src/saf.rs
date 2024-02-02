@@ -1,21 +1,32 @@
 //! A safe api into the Spatial Audio Framework.
 
 use std::ptr::{addr_of_mut, null_mut};
+use std::slice;
 
 use crate::saf_raw;
 
+use hound::Sample;
 use libc::c_void;
 
-/// A Binauralizer is anything that can take an array of sound buffers, paired
+// Sets all audio channel distances to 1 meter—— tretch goal to specify per channel
+const DIST_DEFAULT: f32 = 1.0;
+const SAMP_RATE: i32 = 44100;
+const NUM_OUT_CHANNELS: usize = 2;
+const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
+
+
+/// A Binauraliser is anything that can take an array of sound buffers, paired
 /// with their associated metadata, and return a pair of freshly allocated
 /// buffers representing the mixed stereo audio.
-pub trait Binauralizer {
-    // Our goal here is to implement process: 
+pub trait Binauraliser {
+    fn new() -> Self;
     fn process(&self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
 }
 
 /// The metadata associated with an audio stream. Includes the buffer's angular
 /// position, range, and gain.
+#[derive(Clone)]
+#[derive(Copy)]
 pub struct BufferMetadata {
     azmuth: f32,
     elevation: f32,
@@ -26,25 +37,24 @@ pub struct BufferMetadata {
     
 }
 
-/// Impl of Binauralizer that uses SAF's BinauralizerNF (Near Field)
-pub struct BinauralizerNF {
-    // stores C-style BinauralizerNF object, for use in libsaf
-    h_bin: *mut c_void,     
+/// Impl of Binauraliser that uses SAF's BinauraliserNF (Near Field)
+pub struct BinauraliserNF {
+    // stores C-style BinauraliserNF object, for use in libsaf
+    h_bin: *mut c_void,
 }
 
-impl BinauralizerNF for Binauralizer {
-    /// Creates a new BinauralizerNF, initialized with [ TODO ]
+impl Binauraliser for BinauraliserNF {
+    /// Creates a new BinauraliserNF, initialized with [ TODO ]
     fn new() -> Self {
         let mut h_bin = null_mut();
         unsafe {
-            saf_raw::BinauralizerNF_create(addr_of_mut!(h_bin));
+            saf_raw::binauraliserNF_create(addr_of_mut!(h_bin));
+
+            // initialize sample rate
+            saf_raw::binauraliserNF_init(h_bin, SAMP_RATE);
         }
 
-        // TODO 0. Configure hbin with num of inputs, direction, gain, range
-        BinauralizerNF { h_bin }
-
-        // may want to use binauraliserNF_setSourceDist_m() to set
-        // range 
+        BinauraliserNF { h_bin }
     }
 
 
@@ -52,31 +62,62 @@ impl BinauralizerNF for Binauralizer {
     /// their location, range, and gain. Returns a pair of vectors containing
     /// the mixed binaural audio.
     fn process(&self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
-        // TODO 1. Convert each slice in buffers to a raw pointer
+        // convert each slice in buffers to a raw pointer
+        let num_channels: usize = buffers.len();
+        let num_samples: usize = buffers[0].1.len();
+        
+        // allocate input and output buffers for process() call
+        let mut raw_input_ptrs: Vec<*const f32> = Vec::with_capacity(num_channels);
+        let raw_output_ptrs: Vec<*mut f32> = Vec::with_capacity(NUM_OUT_CHANNELS);
 
+        // allocate output Vecs and create raw pointers to them 
+        let output_vec_1: Vec<f32>;
+        let output_vec_2: Vec<f32>;
 
-        // TODO 2. Allocate output Vecs and create raw pointers to them 
+        unsafe {
+            for (i, (metadata, audio_data)) in buffers.iter().enumerate() {
+                // store raw pointer for channel in raw_data_ptrs
 
+                println!("{:?}", raw_input_ptrs[i]);
+                raw_input_ptrs[i] = audio_data.as_ptr();
 
-        // TODO 3. Call binauraliserNF_process with correct args
+                // set distance, azimuth, and elevation for each channel
+                saf_raw::binauraliserNF_setSourceDist_m(self.h_bin, i as i32, DIST_DEFAULT);
+                saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azmuth * RAD_TO_DEGREE);
+                saf_raw::binauraliser_setSourceElev_deg(self.h_bin, i as i32, metadata.elevation * RAD_TO_DEGREE);
+            }
 
+            // call process() to convert to binaural audio
+            saf_raw::binauraliserNF_process(
+                self.h_bin,
+                raw_input_ptrs.as_slice().as_ptr(),  // N inputs x K samples
+                raw_output_ptrs.as_slice().as_ptr(), // N inputs x K samples
+                num_channels as i32,                 // N inputs
+                NUM_OUT_CHANNELS as i32,             // N outputs
+                num_samples as i32                   // K samples
+            );
+            
+            // convert raw pointers updated by process() back to vectors
+            output_vec_1 = slice::from_raw_parts(raw_output_ptrs[0], num_samples).to_vec();
+            output_vec_2 = slice::from_raw_parts(raw_output_ptrs[1], num_samples).to_vec();
+        }
 
-        // TODO 4. Return output Vecs!
+        (output_vec_1, output_vec_2)
     }
 }
 
 
-impl Default for BinauralizerNF {
+impl Default for BinauraliserNF {
     fn default() -> Self {
         Self::new()
     }
 }
 
-/// Frees memory associated with BinauralizerNF struct
-impl Drop for BinauralizerNF {
+/// Frees memory associated with BinauraliserNF struct
+impl Drop for BinauraliserNF {
     fn drop(&mut self) {
         unsafe {
-            saf_raw::BinauralizerNF_destroy(addr_of_mut!(self.h_bin));
+            saf_raw::binauraliserNF_destroy(addr_of_mut!(self.h_bin));
         }
     }
 }
@@ -84,5 +125,42 @@ impl Drop for BinauralizerNF {
 
 #[cfg(test)]
 mod tests {
+    use ratatui::buffer::Buffer;
+
     use super::*;
+
+    /// Test BinauraliserNF constructor
+    #[test]
+    fn test_create_binauraliser() {
+        let new_binaural_nf: BinauraliserNF = BinauraliserNF::new();
+    }
+
+    #[test]
+    // Test BinauraliserNF process
+    fn test_process_null_data() {
+        let binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
+        const NUM_SAMPLES: usize = 64;
+        const NUM_CHANNELS: usize = 4;
+
+        let mock_meta_data: BufferMetadata = BufferMetadata {
+            azmuth: 0.0,
+            elevation: 0.0,
+            range: 0.0,
+            gain: 0.0
+        };
+
+        let mock_audio_data: [f32; NUM_SAMPLES] = [0.0; NUM_SAMPLES];
+        let mock_buffers = [(mock_meta_data, mock_audio_data.as_slice()); NUM_CHANNELS];
+        
+        let (left_vec, right_vec) = binauraliser_nf.process(mock_buffers.as_ref());
+    
+        println!("AHHHHHHHHH");
+        println!("{:?}", left_vec);
+        println!("{:?}", right_vec);
+    }
+
+    // Invalid input tests
+    // buffers is empty
+    // if several channel / audio buffers have different lengths
+    // 
 }
