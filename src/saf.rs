@@ -1,6 +1,6 @@
 //! A safe api into the Spatial Audio Framework.
 
-use std::ptr::{addr_of_mut, null_mut};
+use std::ptr::{addr_of_mut, null, null_mut};
 use std::slice;
 
 use crate::saf_raw;
@@ -52,6 +52,9 @@ impl Binauraliser for BinauraliserNF {
 
             // initialize sample rate
             saf_raw::binauraliserNF_init(h_bin, SAMP_RATE);
+            
+            // initialize codec variables, whatever those are
+            saf_raw::binauraliserNF_initCodec(h_bin);
         }
 
         BinauraliserNF { h_bin }
@@ -61,21 +64,28 @@ impl Binauraliser for BinauraliserNF {
     /// Takes a slice of audio data buffers, each paired with metadata encoding
     /// their location, range, and gain. Returns a pair of vectors containing
     /// the mixed binaural audio.
+    /// 
+    /// Invariant: All input buffers must be the same length
     fn process(&self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         // convert each slice in buffers to a raw pointer
         let num_channels: usize = buffers.len();
         let num_samples: usize = buffers[0].1.len();
         
         // allocate input and output buffers for process() call
-        let mut raw_input_ptrs: Vec<*const f32> = Vec::with_capacity(num_channels);
-        let raw_output_ptrs: Vec<*mut f32> = Vec::with_capacity(NUM_OUT_CHANNELS);
+        let mut raw_input_ptrs: Vec<*const f32> = vec![null();num_channels];
+        let mut raw_output_ptrs: Vec<*mut f32> = vec![null_mut();NUM_OUT_CHANNELS];
+
+        for i in 0..NUM_OUT_CHANNELS {
+            raw_output_ptrs[i] = vec![0.0;num_samples].as_mut_ptr();
+        }
 
         // allocate output Vecs and create raw pointers to them 
         let output_vec_1: Vec<f32>;
         let output_vec_2: Vec<f32>;
 
+        eprintln!("before unsafe");
         unsafe {
-            for (i, (metadata, audio_data)) in buffers.iter().enumerate() {
+            for (i, (metadata, audio_data)) in buffers.into_iter().enumerate() {
                 // store raw pointer for channel in raw_data_ptrs
 
                 println!("{:?}", raw_input_ptrs[i]);
@@ -86,7 +96,8 @@ impl Binauraliser for BinauraliserNF {
                 saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azmuth * RAD_TO_DEGREE);
                 saf_raw::binauraliser_setSourceElev_deg(self.h_bin, i as i32, metadata.elevation * RAD_TO_DEGREE);
             }
-
+            
+            eprintln!("before saf process call");
             // call process() to convert to binaural audio
             saf_raw::binauraliserNF_process(
                 self.h_bin,
@@ -97,6 +108,8 @@ impl Binauraliser for BinauraliserNF {
                 num_samples as i32                   // K samples
             );
             
+            eprintln!("after saf process call");
+
             // convert raw pointers updated by process() back to vectors
             output_vec_1 = slice::from_raw_parts(raw_output_ptrs[0], num_samples).to_vec();
             output_vec_2 = slice::from_raw_parts(raw_output_ptrs[1], num_samples).to_vec();
@@ -138,8 +151,9 @@ mod tests {
     #[test]
     // Test BinauraliserNF process
     fn test_process_null_data() {
+        eprintln!("before new");
         let binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
-        const NUM_SAMPLES: usize = 64;
+        const NUM_SAMPLES: usize = 4410000;
         const NUM_CHANNELS: usize = 4;
 
         let mock_meta_data: BufferMetadata = BufferMetadata {
@@ -149,9 +163,10 @@ mod tests {
             gain: 0.0
         };
 
-        let mock_audio_data: [f32; NUM_SAMPLES] = [0.0; NUM_SAMPLES];
+        let mock_audio_data = vec![0.0 as f32; NUM_SAMPLES];
         let mock_buffers = [(mock_meta_data, mock_audio_data.as_slice()); NUM_CHANNELS];
         
+        eprintln!("process call in test");
         let (left_vec, right_vec) = binauraliser_nf.process(mock_buffers.as_ref());
     
         println!("AHHHHHHHHH");
