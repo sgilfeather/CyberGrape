@@ -34,7 +34,6 @@ pub struct BufferMetadata {
     // gain: amount of amplification applied to a signal
     // ratio between the input volume and the output volume
     gain: f32,
-    
 }
 
 /// Impl of Binauraliser that uses SAF's BinauraliserNF (Near Field)
@@ -52,7 +51,7 @@ impl Binauraliser for BinauraliserNF {
 
             // initialize sample rate
             saf_raw::binauraliserNF_init(h_bin, SAMP_RATE);
-            
+
             // initialize codec variables, whatever those are
             saf_raw::binauraliserNF_initCodec(h_bin);
         }
@@ -83,12 +82,9 @@ impl Binauraliser for BinauraliserNF {
         let output_vec_1: Vec<f32>;
         let output_vec_2: Vec<f32>;
 
-        eprintln!("before unsafe");
         unsafe {
             for (i, (metadata, audio_data)) in buffers.into_iter().enumerate() {
                 // store raw pointer for channel in raw_data_ptrs
-
-                println!("{:?}", raw_input_ptrs[i]);
                 raw_input_ptrs[i] = audio_data.as_ptr();
 
                 // set distance, azimuth, and elevation for each channel
@@ -97,7 +93,6 @@ impl Binauraliser for BinauraliserNF {
                 saf_raw::binauraliser_setSourceElev_deg(self.h_bin, i as i32, metadata.elevation * RAD_TO_DEGREE);
             }
             
-            eprintln!("before saf process call");
             // call process() to convert to binaural audio
             saf_raw::binauraliserNF_process(
                 self.h_bin,
@@ -107,8 +102,6 @@ impl Binauraliser for BinauraliserNF {
                 NUM_OUT_CHANNELS as i32,             // N outputs
                 num_samples as i32                   // K samples
             );
-            
-            eprintln!("after saf process call");
 
             // convert raw pointers updated by process() back to vectors
             output_vec_1 = slice::from_raw_parts(raw_output_ptrs[0], num_samples).to_vec();
@@ -138,14 +131,12 @@ impl Drop for BinauraliserNF {
 
 #[cfg(test)]
 mod tests {
-    use ratatui::buffer::Buffer;
-
     use super::*;
 
     /// Test BinauraliserNF constructor
     #[test]
     fn test_create_binauraliser() {
-        let new_binaural_nf: BinauraliserNF = BinauraliserNF::new();
+        BinauraliserNF::new();
     }
 
     #[test]
