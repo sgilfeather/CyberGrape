@@ -43,10 +43,10 @@ fn main() {
         dst.join("build").join("examples").display()
     );
 
-    // Tell cargo we want to link against SAF, the Binauraliser, and
+    // Tell cargo we want to link against SAF, the binauraliser, and
     // Apple's Accelerate fast math framework
     println!("cargo:rustc-link-lib=static=saf");
-    println!("cargo:rustc-link-lib=static=saf_example_Binauraliser_nf");
+    println!("cargo:rustc-link-lib=static=saf_example_binauraliser_nf");
     println!("cargo:rustc-link-lib=framework=Accelerate");
 
     // Tell cargo to rebuild SAF if the library changes
