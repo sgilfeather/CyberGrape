@@ -6,6 +6,10 @@ use std::slice;
 use crate::saf_raw;
 
 use hound::Sample;
+use hound::WavReader;
+use hound::WavSpec;
+use hound::WavWriter;
+use hound::SampleFormat;
 use libc::c_void;
 
 // Sets all audio channel distances to 1 meter—— tretch goal to specify per channel
@@ -20,7 +24,7 @@ const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 /// buffers representing the mixed stereo audio.
 pub trait Binauraliser {
     fn new() -> Self;
-    fn process(&self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
+    fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
 }
 
 /// The metadata associated with an audio stream. Includes the buffer's angular
@@ -54,6 +58,7 @@ impl Binauraliser for BinauraliserNF {
 
             // initialize codec variables, whatever those are
             saf_raw::binauraliserNF_initCodec(h_bin);
+            saf_raw::binauraliser_setUseDefaultHRIRsflag(h_bin, 1);
         }
 
         BinauraliserNF { h_bin }
@@ -65,7 +70,7 @@ impl Binauraliser for BinauraliserNF {
     /// the mixed binaural audio.
     /// 
     /// Invariant: All input buffers must be the same length
-    fn process(&self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
+    fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         // convert each slice in buffers to a raw pointer
         let num_channels: usize = buffers.len();
         let num_samples: usize = buffers[0].1.len();
@@ -83,16 +88,19 @@ impl Binauraliser for BinauraliserNF {
         let output_vec_2: Vec<f32>;
 
         unsafe {
+            saf_raw::binauraliser_setNumSources(self.h_bin, num_channels as i32);
+
             for (i, (metadata, audio_data)) in buffers.into_iter().enumerate() {
                 // store raw pointer for channel in raw_data_ptrs
                 raw_input_ptrs[i] = audio_data.as_ptr();
 
                 // set distance, azimuth, and elevation for each channel
-                saf_raw::binauraliserNF_setSourceDist_m(self.h_bin, i as i32, DIST_DEFAULT);
+                saf_raw::binauraliserNF_setSourceDist_m(self.h_bin, i as i32, metadata.range);
                 saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azmuth * RAD_TO_DEGREE);
                 saf_raw::binauraliser_setSourceElev_deg(self.h_bin, i as i32, metadata.elevation * RAD_TO_DEGREE);
+                saf_raw::binauraliser_setSourceGain(self.h_bin, i as i32, metadata.gain);
             }
-            
+
             // call process() to convert to binaural audio
             saf_raw::binauraliserNF_process(
                 self.h_bin,
@@ -131,6 +139,8 @@ impl Drop for BinauraliserNF {
 
 #[cfg(test)]
 mod tests {
+    use std::ptr::read;
+
     use super::*;
 
     /// Test BinauraliserNF constructor
@@ -143,7 +153,7 @@ mod tests {
     // Test BinauraliserNF process
     fn test_process_null_data() {
         eprintln!("before new");
-        let binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
+        let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
         const NUM_SAMPLES: usize = 4410000;
         const NUM_CHANNELS: usize = 4;
 
@@ -161,8 +171,46 @@ mod tests {
         let (left_vec, right_vec) = binauraliser_nf.process(mock_buffers.as_ref());
     
         println!("AHHHHHHHHH");
-        println!("{:?}", left_vec);
-        println!("{:?}", right_vec);
+        // println!("{:?}", left_vec);
+        // println!("{:?}", right_vec);
+    }
+
+    #[test]
+    // test with real sound file!
+    fn test_with_sound() {
+        let mut reader = WavReader::open("/Users/Ayda/Desktop/testsound.wav").unwrap();
+
+        let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
+
+        let sample_vec= reader.samples::<i16>().step_by(2).map(|x| x.unwrap() as f32).collect::<Vec<_>>();
+
+        const NUM_CHANNELS: usize = 1;
+        let NUM_SAMPLES: usize = sample_vec.len();
+
+        let mock_meta_data: BufferMetadata = BufferMetadata {
+            azmuth: 0.0,
+            elevation: 0.0,
+            range: 1.0,
+            gain: 20.0
+        };
+
+        let mock_buffers = [(mock_meta_data, sample_vec.as_slice()); NUM_CHANNELS];
+        // println!("{:?}", mock_buffers[0].1.iter().take(10000).clone().collect::<Vec<_>>());
+
+
+        let (left_vec, right_vec) = binauraliser_nf.process(mock_buffers.as_ref());
+
+        let spec = WavSpec{channels:2, sample_rate:44100, bits_per_sample:16, sample_format: SampleFormat::Int};
+        let mut writer = WavWriter::create("/Users/Ayda/Desktop/testsound_out.wav", spec).unwrap();
+
+        eprintln!("{:?}", left_vec.iter().take(10000).clone().collect::<Vec<_>>());
+
+        for (s1, s2) in std::iter::zip(left_vec, right_vec) {
+            writer.write_sample(s1 as i16).unwrap();
+            writer.write_sample(s2 as i16).unwrap();
+        }
+
+        writer.finalize().unwrap();
     }
 
     // Invalid input tests
