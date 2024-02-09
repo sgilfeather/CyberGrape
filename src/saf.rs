@@ -21,6 +21,28 @@ const SAMP_RATE: i32 = 44100;
 const NUM_OUT_CHANNELS: usize = 2;
 const FRAME_SIZE: usize = 128;
 
+const MOCK_METADATA: BufferMetadata = BufferMetadata {
+    azimuth: 0.0,
+    elevation: 0.0,
+    range: 1.0,
+    gain: 10.0
+};
+
+
+const LEFT_METADATA: BufferMetadata = BufferMetadata {
+    azimuth: 0.0,
+    elevation: 0.0,
+    range: 1.0,
+    gain: 10.0
+};
+
+const RIGHT_METADATA: BufferMetadata = BufferMetadata {
+    azimuth: 0.0,
+    elevation: 0.0,
+    range: 1.0,
+    gain: 10.0
+};
+
 const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
 const FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/hats_off_to_roy_harper.wav";
@@ -41,7 +63,7 @@ pub trait Binauraliser {
 #[derive(Clone)]
 #[derive(Copy)]
 pub struct BufferMetadata {
-    azmuth: f32,
+    azimuth: f32,
     elevation: f32,
     range: f32,
     // gain: amount of amplification applied to a signal
@@ -107,7 +129,7 @@ impl Binauraliser for BinauraliserNF {
 
                 // set distance, azimuth, and elevation for each channel
                 saf_raw::binauraliserNF_setSourceDist_m(self.h_bin, i as i32, metadata.range);
-                saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azmuth * RAD_TO_DEGREE);
+                saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azimuth * RAD_TO_DEGREE);
                 saf_raw::binauraliser_setSourceElev_deg(self.h_bin, i as i32, metadata.elevation * RAD_TO_DEGREE);
                 saf_raw::binauraliser_setSourceGain(self.h_bin, i as i32, metadata.gain);
             }
@@ -159,37 +181,84 @@ mod tests {
 
 
 #[test]
-    fn test_full_with_sound() {
+    // fn test_mono_full() {
+    //     eprintln!("in the test");
+
+    //     let mut reader = WavReader::open(FILE_PATH).unwrap();
+
+    //     let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
+
+    //     let sample_vec = reader.samples::<i16>()
+    //                                      .step_by(2)
+    //                                      .map(|x| x.unwrap() as f32)
+    //                                      .collect::<Vec<_>>();
+
+    //     const NUM_CHANNELS: usize = 1;
+    //     let NUM_SAMPLES: usize = sample_vec.len();
+
+    //     let spec = WavSpec{channels:2, sample_rate:44100, bits_per_sample:16, sample_format: SampleFormat::Int};
+    //     let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
+        
+    //     // here, we loop!
+
+    //     for i in (0..NUM_SAMPLES - FRAME_SIZE).step_by(FRAME_SIZE) {
+    //         let mock_buf_lo = i;
+    //         let mock_buf_hi = i + FRAME_SIZE;
+
+    //         let mock_buf_slice = &sample_vec[mock_buf_lo..mock_buf_hi];
+
+    //         let frame_slice = [(MOCK_METADATA, mock_buf_slice); NUM_CHANNELS];
+
+    //         let (left_vec, right_vec) = binauraliser_nf.process(frame_slice.as_ref());
+
+    //         for (s1, s2) in std::iter::zip(left_vec, right_vec) {
+    //             writer.write_sample(s1 as i16).unwrap();
+    //             writer.write_sample(s2 as i16).unwrap();
+    //         }
+
+    //     }
+
+    //     writer.finalize().unwrap();
+    // }
+
+    #[test]
+    fn test_stereo_to_stereo() {
         eprintln!("in the test");
 
         let mut reader = WavReader::open(FILE_PATH).unwrap();
 
         let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
 
-        let sample_vec = reader.samples::<i16>().step_by(2).map(|x| x.unwrap() as f32).collect::<Vec<_>>();
+        // collect wav file data into Vec of interleaved f32 samples
+        let samples = reader.samples::<i16>()
+                                       .map(|x| x.unwrap() as f32)
+                                       .collect::<Vec<_>>();
 
-        const NUM_CHANNELS: usize = 1;
-        let NUM_SAMPLES: usize = sample_vec.len();
+        let samples_2 = samples.clone();
 
-        let mock_meta_data: BufferMetadata = BufferMetadata {
-            azmuth: 0.0,
-            elevation: 0.0,
-            range: 1.0,
-            gain: 10.0
-        };
+        let left_samp_vec: Vec<f32> = samples.into_iter().step_by(2).collect();
+        let right_samp_vec: Vec<f32> = samples_2.into_iter().skip(1).step_by(2).collect();
+        // let stereo_samples: Vec<(f32, f32)> = left_samp_iter.zip(right_samp_iter).collect();
+
+        const NUM_CHANNELS: usize = 2;
+        let NUM_SAMPLES: usize = left_samp_vec.len(); // assume the same
 
         let spec = WavSpec{channels:2, sample_rate:44100, bits_per_sample:16, sample_format: SampleFormat::Int};
         let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
         
-        // here, we loop!
 
         for i in (0..NUM_SAMPLES - FRAME_SIZE).step_by(FRAME_SIZE) {
             let mock_buf_lo = i;
             let mock_buf_hi = i + FRAME_SIZE;
 
-            let mock_buf_slice = &sample_vec[mock_buf_lo..mock_buf_hi];
+            let left_samp_slice = &left_samp_vec[mock_buf_lo..mock_buf_hi];
+            let right_samp_slice = &right_samp_vec[mock_buf_lo..mock_buf_hi];
 
-            let frame_slice = [(mock_meta_data, mock_buf_slice); NUM_CHANNELS];
+
+            let frame_slice = [
+                (MOCK_METADATA, left_samp_slice),
+                (MOCK_METADATA, right_samp_slice)
+            ];
 
             let (left_vec, right_vec) = binauraliser_nf.process(frame_slice.as_ref());
 
