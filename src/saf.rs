@@ -23,8 +23,8 @@ const FRAME_SIZE: usize = 128;
 
 const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
-const FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/were_the_rats.wav";
-const OUT_FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/were_the_rats_out.wav";
+const FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/hats_off_to_roy_harper.wav";
+const OUT_FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/hats_off_to_roy_harper_out.wav";
 
 
 /// A Binauraliser is anything that can take an array of sound buffers, paired
@@ -34,6 +34,7 @@ pub trait Binauraliser {
     fn new() -> Self;
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
 }
+
 
 /// The metadata associated with an audio stream. Includes the buffer's angular
 /// position, range, and gain.
@@ -104,8 +105,6 @@ impl Binauraliser for BinauraliserNF {
                 // store raw pointer for channel in raw_data_ptrs
                 raw_input_ptrs[i] = audio_data.as_ptr();
 
-                eprintln!("IN PROCESS, USING DATA SLICE {:?}", audio_data);
-
                 // set distance, azimuth, and elevation for each channel
                 saf_raw::binauraliserNF_setSourceDist_m(self.h_bin, i as i32, metadata.range);
                 saf_raw::binauraliser_setSourceAzi_deg(self.h_bin, i as i32, metadata.azmuth * RAD_TO_DEGREE);
@@ -125,14 +124,10 @@ impl Binauraliser for BinauraliserNF {
                 NUM_OUT_CHANNELS as i32,             // N outputs
                 FRAME_SIZE as i32                   // K samples
             );
-            eprintln!("after process call unsafe");
 
             // convert raw pointers updated by process() back to vectors
             output_vec_1 = slice::from_raw_parts(raw_output_ptrs[0], FRAME_SIZE).to_vec();
             output_vec_2 = slice::from_raw_parts(raw_output_ptrs[1], FRAME_SIZE).to_vec();
-
-            eprintln!("AFTER PROCESS, GOT OUT VEC 1: {:?}", output_vec_1);
-            eprintln!("AFTER PROCESS, GOT OUT VEC 2: {:?}", output_vec_2);
         }
 
         (output_vec_1, output_vec_2)
@@ -162,55 +157,6 @@ mod tests {
 
     use super::*;
 
-    // Test BinauraliserNF constructor
-    // #[test]
-    // fn test_create_binauraliser() {
-    //     BinauraliserNF::new();
-    // }
-
-
-    // #[test]
-    // test with real sound file!
-    // fn test_one_frame_sound() {
-    //     eprintln!("in the test");
-
-    //     let mut reader = WavReader::open(FILE_PATH).unwrap();
-
-    //     let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
-    //     eprintln!("before wav");
-
-    //     let sample_vec = reader.samples::<i16>().step_by(2).map(|x| x.unwrap() as f32).collect::<Vec<_>>();
-
-    //     const NUM_CHANNELS: usize = 1;
-    //     eprintln!("NUM SAMPLES IS {}", FRAME_SIZE);
-
-    //     let mock_meta_data: BufferMetadata = BufferMetadata {
-    //         azmuth: 0.0,
-    //         elevation: 0.0,
-    //         range: 1.0,
-    //         gain: 10.0
-    //     };
-
-    //     let spec = WavSpec{channels:2, sample_rate:44100, bits_per_sample:16, sample_format: SampleFormat::Int};
-    //     let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
-
-    //     // length is 
-    //     let mock_buf_slice = &sample_vec[0..FRAME_SIZE];
-    //     assert_eq!(mock_buf_slice.len(), FRAME_SIZE);
-
-    //     let frame_slice = [(mock_meta_data, mock_buf_slice); NUM_CHANNELS];
-
-    //     eprintln!("PASSING IN DATA SLICE {:?}", mock_buf_slice);
-    //     let (left_vec, right_vec) = binauraliser_nf.process(frame_slice.as_ref());
-
-    //     // loop written data to output file
-    //     for (s1, s2) in std::iter::zip(left_vec, right_vec) {
-    //         writer.write_sample(s1 as i16).unwrap();
-    //         writer.write_sample(s2 as i16).unwrap();
-    //     }
-
-    //     writer.finalize().unwrap();
-    // }
 
 #[test]
     fn test_full_with_sound() {
@@ -219,13 +165,11 @@ mod tests {
         let mut reader = WavReader::open(FILE_PATH).unwrap();
 
         let mut binauraliser_nf: BinauraliserNF = BinauraliserNF::new();
-        eprintln!("before wav");
 
         let sample_vec = reader.samples::<i16>().step_by(2).map(|x| x.unwrap() as f32).collect::<Vec<_>>();
 
         const NUM_CHANNELS: usize = 1;
         let NUM_SAMPLES: usize = sample_vec.len();
-        eprintln!("NUM SAMPLES IS {}", NUM_SAMPLES);
 
         let mock_meta_data: BufferMetadata = BufferMetadata {
             azmuth: 0.0,
@@ -234,30 +178,20 @@ mod tests {
             gain: 10.0
         };
 
-        eprintln!("before mock buffers");
-
-        // let mock_buffers = [(mock_meta_data, sample_vec.as_slice()); NUM_CHANNELS];
-        // println!("{:?}", mock_buffers[0].1.iter().take(10000).clone().collect::<Vec<_>>());
-
         let spec = WavSpec{channels:2, sample_rate:44100, bits_per_sample:16, sample_format: SampleFormat::Int};
         let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
         
         // here, we loop!
 
-        // TESTING NOTES: for a non-deterministic i, we eventually seg fault
         for i in (0..NUM_SAMPLES - FRAME_SIZE).step_by(FRAME_SIZE) {
             let mock_buf_lo = i;
             let mock_buf_hi = i + FRAME_SIZE;
-            eprintln!("lo: {} hi: {}", mock_buf_lo, mock_buf_hi);
 
             let mock_buf_slice = &sample_vec[mock_buf_lo..mock_buf_hi];
-            eprintln!("Made mock buf slice len {} for {}", mock_buf_slice.len(), i);
 
             let frame_slice = [(mock_meta_data, mock_buf_slice); NUM_CHANNELS];
-            eprintln!("Made frame slice for {}", i);
 
             let (left_vec, right_vec) = binauraliser_nf.process(frame_slice.as_ref());
-            eprintln!("Finished process for {}", i);
 
             for (s1, s2) in std::iter::zip(left_vec, right_vec) {
                 writer.write_sample(s1 as i16).unwrap();
