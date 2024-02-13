@@ -22,7 +22,7 @@ struct GrapeFile {
 /// TODO
 ///
 ///
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 struct GrapeFileHeader {
     n_streams: u64,
     sample_rate: u64,
@@ -32,7 +32,7 @@ struct GrapeFileHeader {
 /// TODO
 ///
 ///
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 enum GrapeTag {
     X,
     Y,
@@ -139,8 +139,8 @@ impl GrapeFile {
     pub fn streams_with_sample_rate(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
         match sample_rate.cmp(&self.header.sample_rate) {
             Ordering::Equal => self.streams_native_sample_rate().1,
-            Ordering::Greater => self.streams_quantized(sample_rate),
-            Ordering::Less => self.streams_interpolated(sample_rate),
+            Ordering::Less => self.streams_quantized(sample_rate),
+            Ordering::Greater => self.streams_interpolated(sample_rate),
         }
     }
 
