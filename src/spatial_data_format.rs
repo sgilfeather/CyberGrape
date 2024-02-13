@@ -125,6 +125,9 @@ impl GrapeFile {
 
     fn get_raw_streams(&self) -> Vec<Vec<f32>> {
         let n_streams = self.header.n_streams as usize;
+        if n_streams == 0 {
+            return Vec::new();
+        }
         let stream_len = self.samples.len() / n_streams;
         let mut sample_vecs = vec![Vec::with_capacity(stream_len); n_streams];
 
@@ -148,7 +151,8 @@ impl GrapeFile {
                         (0..samples_per_pt)
                             .map(|i| w[0] + i as f32 * step)
                             .collect::<Vec<_>>()
-                    }).collect()
+                    })
+                    .collect()
             })
             .collect();
         Self::attach_tags(&self.header.tags, interpolated_streams)
@@ -177,11 +181,17 @@ struct GrapeFileBuilder {
     streams: Vec<(GrapeTag, Vec<f32>)>,
 }
 
+impl Default for GrapeFileBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl GrapeFileBuilder {
     fn new() -> Self {
         GrapeFileBuilder {
             n_streams: 0,
-            sample_rate: 0,
+            sample_rate: 1000,
             streams: Vec::new(),
         }
     }
@@ -387,9 +397,20 @@ mod tests {
             .unwrap();
 
         let streams = data.streams_with_sample_rate(10);
-        assert_eq!(
-            vec![(GrapeTag::Yaw, vec![0.0, 0.1, 0.2, 0.5])],
-            streams
-        );
+        assert_eq!(vec![(GrapeTag::Yaw, vec![0.0, 0.1, 0.2, 0.5])], streams);
+    }
+
+    #[test]
+    fn read_from_empty() {
+        let data = GrapeFile::builder().build().unwrap();
+
+        let expected: Vec<(GrapeTag, Vec<f32>)> = vec![];
+        let (_, streams1) = data.streams_native_sample_rate();
+        let streams2 = data.streams_with_sample_rate(10);
+        let streams3 = data.streams_with_sample_rate(10000);
+
+        assert_eq!(expected, streams1);
+        assert_eq!(expected, streams2);
+        assert_eq!(expected, streams3);
     }
 }
