@@ -3,6 +3,7 @@ pub mod hardware_data_manager;
 pub mod localizer;
 pub mod saf;
 mod saf_raw;
+pub mod spatial_data_format;
 pub mod update_accumulator;
 
 use std::fmt::Display;
