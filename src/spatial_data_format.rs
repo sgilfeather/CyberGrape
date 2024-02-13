@@ -4,14 +4,15 @@
 
 use serde::{Deserialize, Serialize};
 use std::{
+    cmp::Ordering,
     fs::File,
     io::{Read, Write},
     path::Path,
 };
 
 /// TODO
-/// 
-/// 
+///
+///
 #[derive(Debug, Clone, PartialEq)]
 struct GrapeFile {
     header: GrapeFileHeader,
@@ -19,8 +20,8 @@ struct GrapeFile {
 }
 
 /// TODO
-/// 
-/// 
+///
+///
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 struct GrapeFileHeader {
     n_streams: u64,
@@ -29,8 +30,8 @@ struct GrapeFileHeader {
 }
 
 /// TODO
-/// 
-/// 
+///
+///
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 enum GrapeTag {
     X,
@@ -45,8 +46,8 @@ enum GrapeTag {
 }
 
 /// TODO
-/// 
-/// 
+///
+///
 #[derive(Debug)]
 enum GrapeFileError {
     UnequalSampleBufferLengths,
@@ -58,17 +59,16 @@ enum GrapeFileError {
 }
 
 impl GrapeFile {
-
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn builder() -> GrapeFileBuilder {
         GrapeFileBuilder::new()
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn to_file(&self, path: impl AsRef<Path>) -> Result<(), GrapeFileError> {
         let mut handle = File::create(path).map_err(GrapeFileError::IoError)?;
 
@@ -87,8 +87,8 @@ impl GrapeFile {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn from_file(path: impl AsRef<Path>) -> Result<Self, GrapeFileError> {
         let mut handle = File::open(path).map_err(GrapeFileError::IoError)?;
 
@@ -123,8 +123,8 @@ impl GrapeFile {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn streams_native_sample_rate(&self) -> (u64, Vec<(GrapeTag, Vec<f32>)>) {
         let sample_vecs = self.get_raw_streams();
 
@@ -134,29 +134,27 @@ impl GrapeFile {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn streams_with_sample_rate(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
-        if sample_rate == self.header.sample_rate {
-            self.streams_native_sample_rate().1
-        } else if sample_rate > self.header.sample_rate {
-            self.streams_interpolated(sample_rate)
-        } else {
-            self.streams_quantized(sample_rate)
+        match sample_rate.cmp(&self.header.sample_rate) {
+            Ordering::Equal => self.streams_native_sample_rate().1,
+            Ordering::Greater => self.streams_quantized(sample_rate),
+            Ordering::Less => self.streams_interpolated(sample_rate),
         }
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn attach_tags(tags: &[GrapeTag], samples: Vec<Vec<f32>>) -> Vec<(GrapeTag, Vec<f32>)> {
         assert_eq!(tags.len(), samples.len());
-        tags.iter().cloned().zip(samples.into_iter()).collect()
+        tags.iter().cloned().zip(samples).collect()
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn get_raw_streams(&self) -> Vec<Vec<f32>> {
         let n_streams = self.header.n_streams as usize;
         if n_streams == 0 {
@@ -173,8 +171,8 @@ impl GrapeFile {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn streams_interpolated(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
         debug_assert!(sample_rate > self.header.sample_rate);
         let samples_per_pt = sample_rate as usize / self.header.sample_rate as usize;
@@ -196,8 +194,8 @@ impl GrapeFile {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn streams_quantized(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
         debug_assert!(sample_rate < self.header.sample_rate);
         let pts_per_sample = self.header.sample_rate as usize / sample_rate as usize;
@@ -214,10 +212,9 @@ impl GrapeFile {
     }
 }
 
-
 /// TODO
-/// 
-/// 
+///
+///
 #[derive(Debug, Clone)]
 struct GrapeFileBuilder {
     n_streams: u64,
@@ -226,20 +223,18 @@ struct GrapeFileBuilder {
 }
 
 impl Default for GrapeFileBuilder {
-
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn default() -> Self {
         Self::new()
     }
 }
 
 impl GrapeFileBuilder {
-
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     fn new() -> Self {
         GrapeFileBuilder {
             n_streams: 0,
@@ -249,8 +244,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn set_samplerate(self, sample_rate: u64) -> Self {
         GrapeFileBuilder {
             sample_rate,
@@ -259,8 +254,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn add_stream(mut self, stream: &[f32], tag: GrapeTag) -> Self {
         let stream: Vec<f32> = stream.to_vec();
         self.streams.push((tag, stream));
@@ -269,8 +264,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn clear_streams(mut self) -> Self {
         self.streams.clear();
         self.n_streams = 0;
@@ -278,8 +273,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn build_truncate(self) -> GrapeFile {
         let tags: Vec<GrapeTag> = self
             .streams
@@ -312,8 +307,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn build_extend(self) -> GrapeFile {
         let tags: Vec<GrapeTag> = self
             .streams
@@ -355,8 +350,8 @@ impl GrapeFileBuilder {
     }
 
     /// TODO
-    /// 
-    /// 
+    ///
+    ///
     pub fn build(self) -> Result<GrapeFile, GrapeFileError> {
         let lens: Vec<usize> = self.streams.iter().map(|(_tag, v)| v.len()).collect();
 
