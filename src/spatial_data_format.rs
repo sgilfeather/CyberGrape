@@ -24,14 +24,14 @@ use std::{
 
 /// This struct contains the header and samples associated with a GrapeFile
 #[derive(Debug, Clone, PartialEq)]
-struct GrapeFile {
+pub struct GrapeFile {
     header: GrapeFileHeader,
     samples: Vec<f32>,
 }
 
 /// This struct contains the header data for a [GrapeFile].
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-struct GrapeFileHeader {
+pub struct GrapeFileHeader {
     n_streams: u64,
     sample_rate: u64,
     tags: Vec<GrapeTag>,
@@ -44,7 +44,7 @@ struct GrapeFileHeader {
 /// [GrapeTag::Pitch], [GrapeTag::Yaw], and [GrapeTag::Roll] represent angular
 /// directions.
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
-enum GrapeTag {
+pub enum GrapeTag {
     X,
     Y,
     Z,
@@ -58,7 +58,7 @@ enum GrapeTag {
 
 ///
 #[derive(Debug)]
-enum GrapeFileError {
+pub enum GrapeFileError {
     UnequalSampleBufferLengths,
     NoDelimiter,
     TryInto,
@@ -228,7 +228,7 @@ impl GrapeFile {
 
 /// This builder contains the data required
 #[derive(Debug, Clone)]
-struct GrapeFileBuilder {
+pub struct GrapeFileBuilder {
     sample_rate: u64,
     streams: Vec<(GrapeTag, Vec<f32>)>,
 }
