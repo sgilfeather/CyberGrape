@@ -2,7 +2,7 @@
 //! developed to contain spatial data in the time domain. The files have the
 //! following structure:
 //!
-//! - First there is a header that contains some metadata; see [GrapeFileHeader]
+//! - First there is a header that contains some metadata:
 //!   - The sample rate of the file (samples per second)
 //!   - The number of data streams
 //!   - An array of tags for the data streams, indicating a cartesian dimenson,
@@ -31,7 +31,7 @@ pub struct GrapeFile {
 
 /// This struct contains the header data for a [GrapeFile].
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
-pub struct GrapeFileHeader {
+struct GrapeFileHeader {
     n_streams: u64,
     sample_rate: u64,
     tags: Vec<GrapeTag>,
@@ -56,14 +56,28 @@ pub enum GrapeTag {
     Roll,
 }
 
-///
+/// A nice little error that we can return if things go wrong throughout
+/// the process of reading, building, or writing a [GrapeFile].
 #[derive(Debug)]
 pub enum GrapeFileError {
+    /// Returned when trying to build a [GrapeFile] using [GrapeFileBuilder::build()]
+    /// and the sample buffers are of unequal lengths.
     UnequalSampleBufferLengths,
+
+    /// Returned when trying to read a [GrapeFile], but are not able to find
+    /// the delimiter between the header and sample binary.
     NoDelimiter,
+
+    /// Returned when somehow we fail to turn four bytes into a f32 when reading.
     TryInto,
+
+    /// Returned when io fails when reading or writing files.
     IoError(std::io::Error),
+
+    /// Returned when serialization of the header fails.
     RonError(ron::Error),
+
+    /// Returned when deserialization of the header fails.
     RonSpannedError(ron::de::SpannedError),
 }
 
@@ -95,17 +109,21 @@ impl GrapeFile {
     /// Write out a [GrapeFile] to the path provided.
     pub fn to_path(&self, path: impl AsRef<Path>) -> Result<(), GrapeFileError> {
         let mut handle = File::create(path).map_err(GrapeFileError::IoError)?;
+        self.to_file(handle)
+    }
 
+    /// Write out a [GrapeFile] to the [Write]able object provided.
+    pub fn to_file(&self, mut file: impl Write) -> Result<(), GrapeFileError> {
         let h_str = ron::ser::to_string(&self.header).map_err(GrapeFileError::RonError)?;
         let h_buf = h_str.as_bytes();
 
-        handle.write_all(h_buf).map_err(GrapeFileError::IoError)?;
+        file.write_all(h_buf).map_err(GrapeFileError::IoError)?;
 
-        handle.write_all(&[0xFF]).map_err(GrapeFileError::IoError)?;
+        file.write_all(&[0xFF]).map_err(GrapeFileError::IoError)?;
 
         let s_buf: Vec<u8> = self.samples.iter().flat_map(|f| f.to_be_bytes()).collect();
 
-        handle.write_all(&s_buf).map_err(GrapeFileError::IoError)?;
+        file.write_all(&s_buf).map_err(GrapeFileError::IoError)?;
 
         Ok(())
     }
@@ -113,10 +131,13 @@ impl GrapeFile {
     /// Read a [GrapeFile] from the path provided.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, GrapeFileError> {
         let mut handle = File::open(path).map_err(GrapeFileError::IoError)?;
+        Self::from_file(handle)
+    }
 
+    /// Read a [GrapeFile] from the [Read]able object provided.
+    pub fn from_file(mut file: impl Read) -> Result<Self, GrapeFileError> {
         let mut raw_text = Vec::new();
-        handle
-            .read_to_end(&mut raw_text)
+        file.read_to_end(&mut raw_text)
             .map_err(GrapeFileError::IoError)?;
 
         let delim_idx = raw_text
