@@ -109,11 +109,11 @@ impl GrapeFile {
     /// Write out a [GrapeFile] to the path provided.
     pub fn to_path(&self, path: impl AsRef<Path>) -> Result<(), GrapeFileError> {
         let mut handle = File::create(path).map_err(GrapeFileError::IoError)?;
-        self.to_file(handle)
+        self.to_file(&mut handle)
     }
 
     /// Write out a [GrapeFile] to the [Write]able object provided.
-    pub fn to_file(&self, mut file: impl Write) -> Result<(), GrapeFileError> {
+    pub fn to_file(&self, file: &mut impl Write) -> Result<(), GrapeFileError> {
         let h_str = ron::ser::to_string(&self.header).map_err(GrapeFileError::RonError)?;
         let h_buf = h_str.as_bytes();
 
@@ -131,11 +131,11 @@ impl GrapeFile {
     /// Read a [GrapeFile] from the path provided.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, GrapeFileError> {
         let mut handle = File::open(path).map_err(GrapeFileError::IoError)?;
-        Self::from_file(handle)
+        Self::from_file(&mut handle)
     }
 
     /// Read a [GrapeFile] from the [Read]able object provided.
-    pub fn from_file(mut file: impl Read) -> Result<Self, GrapeFileError> {
+    pub fn from_file(file: &mut impl Read) -> Result<Self, GrapeFileError> {
         let mut raw_text = Vec::new();
         file.read_to_end(&mut raw_text)
             .map_err(GrapeFileError::IoError)?;
@@ -384,9 +384,10 @@ impl GrapeFileBuilder {
 const A_FLOAT: f32 = 12.07843112945556640625;
 mod tests {
     use super::*;
+    use std::io::Cursor;
 
     #[test]
-    fn write_and_read() {
+    fn write_and_read_path() {
         let tempfile = tempfile::NamedTempFile::new().unwrap();
         let path = tempfile.path();
         let data = GrapeFile::builder()
@@ -398,6 +399,22 @@ mod tests {
 
         data.to_path(path).unwrap();
         let read_data = GrapeFile::from_path(path).unwrap();
+        assert_eq!(data, read_data);
+    }
+
+    #[test]
+    fn write_and_read_cursor() {
+        let mut buf = Cursor::new(Vec::new());
+        let data = GrapeFile::builder()
+            .set_samplerate(1000)
+            .add_stream(&vec![A_FLOAT; 4], GrapeTag::X)
+            .add_stream(&vec![A_FLOAT; 4], GrapeTag::Y)
+            .build()
+            .unwrap();
+
+        data.to_file(&mut buf).unwrap();
+        buf.set_position(0);
+        let read_data = GrapeFile::from_file(&mut buf).unwrap();
         assert_eq!(data, read_data);
     }
 
