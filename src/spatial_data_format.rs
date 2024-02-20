@@ -306,8 +306,8 @@ impl GrapeFileBuilder {
 
         let mut samples = Vec::new();
 
-        if !sample_vecs.is_empty() {
-            let shortest = sample_vecs.iter().map(|v| v.len()).min().unwrap();
+        let shortest = sample_vecs.iter().map(|v| v.len()).min();
+        if let Some(shortest) = shortest {
             samples.reserve_exact(shortest * sample_vecs.len() as usize);
             for sample_idx in 0..shortest {
                 for stream_idx in 0..sample_vecs.len() {
