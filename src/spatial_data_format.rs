@@ -190,17 +190,16 @@ impl GrapeFile {
     /// Returns a cloned, de-interleaved version of the samples in the file.
     fn get_raw_streams(&self) -> Vec<Vec<f32>> {
         let n_streams = self.header.n_streams as usize;
-        if n_streams == 0 {
-            return Vec::new();
-        }
-        let stream_len = self.samples.len() / n_streams;
-        let mut sample_vecs = vec![Vec::with_capacity(stream_len); n_streams];
-
-        for (i, &e) in self.samples.iter().enumerate() {
-            let stream_idx = i % n_streams;
-            sample_vecs[stream_idx].push(e);
-        }
-        sample_vecs
+        (0..n_streams)
+            .map(|i| {
+                self.samples
+                    .iter()
+                    .skip(i)
+                    .step_by(n_streams)
+                    .cloned()
+                    .collect()
+            })
+            .collect()
     }
 
     /// Extracts the streams from the file, and interpolates data points to
