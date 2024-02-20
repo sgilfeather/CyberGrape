@@ -123,7 +123,7 @@ impl GrapeFile {
 
         let s_buf: Vec<u8> = self.samples.iter().flat_map(|f| f.to_be_bytes()).collect();
 
-        file.write_all(&s_buf).map_err(GrapeFileError::IoError)?;
+        file.write_all(&s_buf).map_err(GrapeFileError::IoError)
 
         Ok(())
     }
