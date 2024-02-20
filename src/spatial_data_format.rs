@@ -124,8 +124,6 @@ impl GrapeFile {
         let s_buf: Vec<u8> = self.samples.iter().flat_map(|f| f.to_be_bytes()).collect();
 
         file.write_all(&s_buf).map_err(GrapeFileError::IoError)
-
-        Ok(())
     }
 
     /// Read a [GrapeFile] from the path provided.
@@ -146,8 +144,6 @@ impl GrapeFile {
             .ok_or(GrapeFileError::NoDelimiter)?;
 
         let (header_buf, samples_buf) = raw_text.split_at(delim_idx);
-        let (_, samples_buf) = samples_buf
-            .split_first()
         let samples_buf = &samples_buf[1..];
 
         let header = ron::de::from_bytes::<GrapeFileHeader>(header_buf)
@@ -155,7 +151,7 @@ impl GrapeFile {
 
         let samples: Vec<f32> = samples_buf
             .chunks(4)
-            .map(|bs| -> Result<f32, GrapeFileError> {
+            .map(|bs| {
                 let four_bytes: [u8; 4] =
                     bs[0..4].try_into().map_err(|_| GrapeFileError::TryInto)?;
                 Ok(f32::from_be_bytes(four_bytes))
@@ -209,6 +205,9 @@ impl GrapeFile {
 
     /// Extracts the streams from the file, and interpolates data points to
     /// produce data points at the requrested sample_rate.
+    ///
+    /// Right now, this function only really works if the requested sample rate
+    /// is a multiple of the native sample rate. This needs some work.
     fn streams_interpolated(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
         debug_assert!(sample_rate > self.header.sample_rate);
         let samples_per_pt = sample_rate as usize / self.header.sample_rate as usize;
@@ -231,6 +230,9 @@ impl GrapeFile {
 
     /// Extracts the streams from the file, and quantizes data points to
     /// produce data points at the requested sample_rate.
+    ///
+    /// Right now, this function only really works if the requested sample rate
+    /// is a factor of the native sample rate. This needs some work.
     fn streams_quantized(&self, sample_rate: u64) -> Vec<(GrapeTag, Vec<f32>)> {
         debug_assert!(sample_rate < self.header.sample_rate);
         let pts_per_sample = self.header.sample_rate as usize / sample_rate as usize;
@@ -385,6 +387,7 @@ const A_FLOAT: f32 = 12.07843112945556640625;
 mod tests {
     use super::*;
     use std::io::Cursor;
+    use rand::distributions::{Distribution, Uniform};
 
     #[test]
     fn write_and_read_path() {
@@ -511,5 +514,46 @@ mod tests {
         assert_eq!(expected, streams1);
         assert_eq!(expected, streams2);
         assert_eq!(expected, streams3);
+    }
+
+    #[test]
+    fn long_write_read() {
+        let rng = rand::thread_rng();
+        let dist = Uniform::new(-100.0, 100.0);
+        let v: Vec<f32> = dist.sample_iter(rng).take(1000000).collect();
+        let mut buf = Cursor::new(Vec::new());
+        let data = GrapeFile::builder()
+            .set_samplerate(1000)
+            .add_stream(&v, GrapeTag::X)
+            .add_stream(&v, GrapeTag::Y)
+            .build()
+            .unwrap();
+
+        data.to_file(&mut buf).unwrap();
+        buf.set_position(0);
+        let read_data = GrapeFile::from_file(&mut buf).unwrap();
+        assert_eq!(data, read_data);
+    }
+
+    #[test]
+    fn write_read_255_streams() {
+        let rng = rand::thread_rng();
+        let dist = Uniform::new(-100.0, 100.0);
+        let v: Vec<f32> = dist.sample_iter(rng).take(100).collect();
+        let mut buf = Cursor::new(Vec::new());
+        let mut builder = GrapeFile::builder();
+
+        for _ in (0..256) {
+            builder = builder.add_stream(&v, GrapeTag::Roll);
+        }
+
+        let data = builder.set_samplerate(1000)
+            .build()
+            .unwrap();
+
+        data.to_file(&mut buf).unwrap();
+        buf.set_position(0);
+        let read_data = GrapeFile::from_file(&mut buf).unwrap();
+        assert_eq!(data, read_data);
     }
 }
