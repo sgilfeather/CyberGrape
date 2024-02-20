@@ -14,16 +14,25 @@ const FRAME_SIZE: usize = 128;
 
 const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
+/// 
 /// A Binauraliser is anything that can take an array of sound buffers, paired
 /// with their associated metadata, and return a pair of freshly allocated
 /// buffers representing the mixed stereo audio.
+/// 
 pub trait Binauraliser {
     fn new() -> Self;
     fn process_frame(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
+
+    /// 
+    /// Takes a slice of audio data tuples for each sound source. Each tuple
+    /// contains float sound data and a BufferMetadata, which encodes the
+    /// sound source's location, range, and gain over that frame period.
+    /// 
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         let num_samples = buffers.iter().map(|b| b.1.len()).max().unwrap_or(0);
         let mut final_left_vec = Vec::with_capacity(num_samples);
         let mut final_right_vec = Vec::with_capacity(num_samples);
+
         for i in (0..(num_samples - FRAME_SIZE)).step_by(FRAME_SIZE) {
             let buf_lo = i;
             let buf_hi = i + FRAME_SIZE;
@@ -76,11 +85,16 @@ impl Binauraliser for BinauraliserNF {
         BinauraliserNF { h_bin }
     }
 
-    /// Takes a slice of audio data buffers, each paired with metadata encoding
-    /// their location, range, and gain. Returns a pair of vectors containing
-    /// the mixed binaural audio.
+    /// 
+    /// Takes a slice of audio data tuples for each sound source. Each tuple
+    /// contains 128 frames of float sound data and a BufferMetadata,
+    /// which encodes the sound source's location, range, and gain over that
+    /// frame period.
+    /// 
+    /// Returns a pair of vectors containing the mixed binaural audio.
     ///
     /// Invariant: All input buffers must be the same length, of 128
+    ///
     fn process_frame(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         for (_, b) in buffers {
             debug_assert_eq!(b.len(), FRAME_SIZE);
@@ -121,7 +135,8 @@ impl Binauraliser for BinauraliserNF {
                 saf_raw::binauraliser_setSourceGain(self.h_bin, i as i32, metadata.gain);
             }
 
-            // initialize codec variables, whatever those are, RIGHT before process
+            // note: must initialize codec variables after setting positional
+            // data for each of the sound sources
             saf_raw::binauraliserNF_initCodec(self.h_bin);
 
             // call process() to convert to binaural audio
@@ -174,6 +189,7 @@ mod tests {
     use super::*;
 
     use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
+    use std::f32::consts::PI;
 
     const MOCK_METADATA: BufferMetadata = BufferMetadata {
         azimuth: 0.0,
@@ -196,138 +212,100 @@ mod tests {
         gain: 1.0,
     };
 
-    const FILE_PATH: &'static str = "/Users/Skylar.Gilfeather/Desktop/hats_off_to_roy_harper.wav";
-    const OUT_FILE_PATH: &'static str =
-        "/Users/Skylar.Gilfeather/Desktop/hats_off_to_roy_harper_out.wav";
+    const C: f32 = 261.61;
+    const G: f32 = 392.00;
 
-    #[test]
-    fn test_mono_full() {
-        eprintln!("in the test");
+    fn create_sine_wave(frames: i32, note: f32) -> Vec<f32> {
+        (0 .. frames)
+            .map(|x| (x % 44100) as f32 / 44100.0)
+            .map(|t| 
+                (t * note * 2.0 * PI).sin() * (i16::MAX as f32))
+            .collect()
+    }
 
-        let mut reader = WavReader::open(FILE_PATH).unwrap();
-
-        let mut binauraliser_nf = DummyBinauraliser::new();
-
-        let sample_vec = reader
-            .samples::<i16>()
-            .step_by(2)
-            .map(|x| x.unwrap() as f32)
-            .collect::<Vec<_>>();
-
-        const NUM_CHANNELS: usize = 1;
-        let num_samples: usize = sample_vec.len();
-
+    fn write_stereo_output(left_samps: Vec<f32>, 
+                           right_samps: Vec<f32>, 
+                           out_file: &'static str) {
         let spec = WavSpec {
             channels: 2,
             sample_rate: 44100,
             bits_per_sample: 16,
             sample_format: SampleFormat::Int,
         };
-        let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
 
-        // here, we loop!
-
-        for i in (0..num_samples - FRAME_SIZE).step_by(FRAME_SIZE) {
-            let mock_buf_lo = i;
-            let mock_buf_hi = i + FRAME_SIZE;
-
-            let mock_buf_slice = &sample_vec[mock_buf_lo..mock_buf_hi];
-
-            let frame_slice = [(MOCK_METADATA, mock_buf_slice); NUM_CHANNELS];
-
-            let (left_vec, right_vec) = binauraliser_nf.process_frame(frame_slice.as_ref());
-
-            for (s1, s2) in std::iter::zip(left_vec, right_vec) {
-                writer.write_sample(s1 as i16).unwrap();
-                writer.write_sample(s2 as i16).unwrap();
-            }
+        let mut writer = WavWriter::create(out_file, spec).unwrap();
+    
+        for (left, right) in std::iter::zip(left_samps, right_samps) {
+            writer.write_sample(left as i16).unwrap();
+            writer.write_sample(right as i16).unwrap();
         }
 
         writer.finalize().unwrap();
     }
 
     #[test]
-    fn framewise_stereo_to_sftereo() {
-        let mut reader = WavReader::open(FILE_PATH).unwrap();
-
+    ///
+    /// Validate that runnning process_frame() doesn't segfault on mono
+    /// audio data
+    ///
+    fn test_mono_single_frame() {
         let mut binauraliser_nf = BinauraliserNF::new();
 
-        // collect wav file data into Vec of interleaved f32 samples
-        let samples = reader
-            .samples::<i16>()
-            .map(|x| x.unwrap() as f32)
-            .collect::<Vec<_>>();
+        // 1 frame of audio (128 samples)
+        let c_note_vec: Vec<f32> = create_sine_wave(FRAME_SIZE as i32, C);
+        let frame_slice = [
+            (MOCK_METADATA, &c_note_vec[0..FRAME_SIZE])
+        ];
 
-        let samples_2 = samples.clone();
-
-        let left_samp_vec: Vec<f32> = samples.into_iter().step_by(2).collect();
-        let right_samp_vec: Vec<f32> = samples_2.into_iter().skip(1).step_by(2).collect();
-        // let stereo_samples: Vec<(f32, f32)> = left_samp_iter.zip(right_samp_iter).collect();
-
-        let num_samples: usize = left_samp_vec.len(); // assume the same
-
-        let spec = WavSpec {
-            channels: 2,
-            sample_rate: 44100,
-            bits_per_sample: 16,
-            sample_format: SampleFormat::Int,
-        };
-        let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
-
-        for i in (0..num_samples - FRAME_SIZE).step_by(FRAME_SIZE) {
-            let mock_buf_lo = i;
-            let mock_buf_hi = i + FRAME_SIZE;
-
-            let left_samp_slice = &left_samp_vec[mock_buf_lo..mock_buf_hi];
-            let right_samp_slice = &right_samp_vec[mock_buf_lo..mock_buf_hi];
-
-            let frame_slice = [
-                (LEFT_METADATA, left_samp_slice),
-                (RIGHT_METADATA, right_samp_slice),
-            ];
-
-            let (left_vec, right_vec) = binauraliser_nf.process_frame(frame_slice.as_ref());
-
-            for (s1, s2) in std::iter::zip(left_vec, right_vec) {
-                writer.write_sample(s1 as i16).unwrap();
-                writer.write_sample(s2 as i16).unwrap();
-            }
-        }
-        writer.finalize().unwrap();
+        // assert no segfault and that data is non-null
+        let (left_samps, right_samps) = binauraliser_nf.process_frame(frame_slice.as_ref());
+        assert!(left_samps.into_iter().all(|x| x != 0.0 ));
+        assert!(right_samps.into_iter().all(|x| x != 0.0 ));
     }
 
     #[test]
-    fn stereo_to_stereo() {
-        let mut reader = WavReader::open(FILE_PATH).unwrap();
-
+    ///
+    /// Validate that runnning process_frame() doesn't segfault on stereo
+    /// audio data
+    ///
+    fn test_stereo_single_frame() {
         let mut binauraliser_nf = BinauraliserNF::new();
 
-        // collect wav file data into Vec of interleaved f32 samples
-        let samples = reader
-            .samples::<i16>()
-            .map(|x| x.unwrap() as f32)
-            .collect::<Vec<_>>();
+        // 1 frame of audio (128 samples)
+        let c_note_vec: Vec<f32> = create_sine_wave(FRAME_SIZE as i32, C);
+        let g_note_vec: Vec<f32> = create_sine_wave(FRAME_SIZE as i32, G);
 
-        let samples_2 = samples.clone();
+        let frame_slice = [
+            (LEFT_METADATA, &c_note_vec[0..FRAME_SIZE]),
+            (RIGHT_METADATA, &g_note_vec[0..FRAME_SIZE]),
+        ];
 
-        let left_samp_vec: Vec<f32> = samples.into_iter().step_by(2).collect();
-        let right_samp_vec: Vec<f32> = samples_2.into_iter().skip(1).step_by(2).collect();
+        // assert no segfault and that data is non-null
+        let (left_samps, right_samps) = binauraliser_nf.process_frame(frame_slice.as_ref());
+        assert!(left_samps.into_iter().all(|x| x != 0.0 ));
+        assert!(right_samps.into_iter().all(|x| x != 0.0 ));
+    }
 
-        let spec = WavSpec {
-            channels: 2,
-            sample_rate: 44100,
-            bits_per_sample: 16,
-            sample_format: SampleFormat::Int,
-        };
-        let mut writer = WavWriter::create(OUT_FILE_PATH, spec).unwrap();
+    #[test]
+    fn test_stereo_multi_frame() {
+        let mut binauraliser_nf = BinauraliserNF::new();
 
-        let (left_vec, right_vec) = binauraliser_nf.process(&[(LEFT_METADATA, &left_samp_vec), (RIGHT_METADATA, &right_samp_vec)]);
+        const THREE_SEC: i32 = SAMP_RATE * 3; 
+        // 1 frame of audio (128 samples)
+        let c_note_vec: Vec<f32> = create_sine_wave(THREE_SEC, C);
+        let g_note_vec: Vec<f32> = create_sine_wave(THREE_SEC, G);
 
-        for (l, r) in std::iter::zip(left_vec, right_vec) {
-            writer.write_sample(l as i16).unwrap();
-            writer.write_sample(r as i16).unwrap();
-        }
+        let frame_slice = [
+            (LEFT_METADATA, &c_note_vec[0..THREE_SEC as usize]),
+            (RIGHT_METADATA, &g_note_vec[0..THREE_SEC as usize]),
+        ];
 
-        writer.finalize().unwrap();
+        // assert no segfault and that data is non-null
+        let (left_samps, right_samps) = binauraliser_nf.process(frame_slice.as_ref());
+        assert!(left_samps.clone().into_iter().all(|x| x != 0.0 ));
+        assert!(right_samps.clone().into_iter().all(|x| x != 0.0 ));
+
+        // toggle writing output
+        // write_stereo_output(left_samps, right_samps, "/Users/Skylar.Gilfeather/Desktop/out.wav");
     }
 }
