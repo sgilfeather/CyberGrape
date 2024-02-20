@@ -339,8 +339,8 @@ impl GrapeFileBuilder {
 
         let mut samples = Vec::new();
 
-        if !sample_vecs.is_empty() {
-            let longest = sample_vecs.iter().map(|v| v.len()).max().unwrap();
+        let longest = sample_vecs.iter().map(|v| v.len()).max();
+        if let Some(longest) = longest {
             let lasts: Vec<f32> = sample_vecs
                 .iter()
                 .map(|v| v.last().unwrap_or(&0.0))
