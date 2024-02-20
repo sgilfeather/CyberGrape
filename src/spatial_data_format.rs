@@ -148,7 +148,7 @@ impl GrapeFile {
         let (header_buf, samples_buf) = raw_text.split_at(delim_idx);
         let (_, samples_buf) = samples_buf
             .split_first()
-            .ok_or(GrapeFileError::NoDelimiter)?;
+        let samples_buf = &samples_buf[1..];
 
         let header = ron::de::from_bytes::<GrapeFileHeader>(header_buf)
             .map_err(GrapeFileError::RonSpannedError)?;
