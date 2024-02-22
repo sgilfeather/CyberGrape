@@ -22,9 +22,9 @@ use std::{
 use cg::Point;
 
 // This is a function pointer in Rust! The important bit is on the right side. The
-// FnMut says that it is a function, () means that it takes no arguments, and 
+// FnMut says that it is a function, () means that it takes no arguments, and
 // -> Vec<Point> means that it returns a vector of Points. The whole thing put
-// together, FunMut() -> Vec<Point>, is **not** a type!! It is a trait. Every 
+// together, FunMut() -> Vec<Point>, is **not** a type!! It is a trait. Every
 // individual function in Rust is its own type, but it implements a trait that
 // describes its arguments and return values. FunMut() -> Vec<Point> is one of
 // those such traits.
@@ -34,7 +34,7 @@ use cg::Point;
 // needs to be a full type. This is basically saying that we will take a Box that
 // contains anything that implements the FunMut() -> Vec<Point> trait. It needs to
 // be in a Box because the function itself could be of a variable size, so it must
-// be allocated on the heap, hence the Box. 
+// be allocated on the heap, hence the Box.
 type PointGenerator = Box<dyn FnMut() -> Vec<Point>>;
 
 /// This struct contains function pointers that generate original/debug points
