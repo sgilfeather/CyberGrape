@@ -29,7 +29,11 @@ pub trait Binauraliser {
     /// sound source's location, range, and gain over that frame period.
     ///
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
-        let num_samples = buffers.iter().map(|b| b.1.len()).max().unwrap_or(0);
+        let num_samples = buffers
+            .iter()
+            .map(|(_tag, samples)| samples.len())
+            .max()
+            .unwrap_or(0);
         let mut final_left_vec = Vec::with_capacity(num_samples);
         let mut final_right_vec = Vec::with_capacity(num_samples);
 
