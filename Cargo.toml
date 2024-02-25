@@ -22,7 +22,9 @@ libc = "0.2.150"
 rand = "0.8.5"
 ratatui = "0.26.1"
 rayon = "1.8.0"
+ron = "0.8.1"
 serde = { version = "1.0.190", features = ["derive"] }
+tempfile = "3.10.0"
 
 [build-dependencies]
 bindgen = "0.69.1"

@@ -14,7 +14,6 @@ use cg::update_accumulator::UpdateAccumulator;
 use gui::engage_gui;
 
 fn main() {
-
     // Configure, instantiate, and start the dummy HDM.
     let hdm = DummyHdm::builder()
         .num_points(10)
@@ -29,7 +28,7 @@ fn main() {
     //
     // This is called the **interior mutability pattern**.
     let hdm_rf = Rc::new(RefCell::new(hdm));
-    
+
     // Now we're going to shadow over the hdm variable with a reference so that
     // we don't accidentially do something funky with the original thing.
     let hdm = hdm_rf.clone();
@@ -43,12 +42,12 @@ fn main() {
     // Ok now this is the wonky bit. We're going to define closures to pass into
     // this function. The || indicates that this is a closure that takes no arguments
     // and move indicates that captured variables will be _moved_ into the scope
-    // of the function, rather than being borrowed. 
-    // 
-    // So, we move the debug_hdm_handle into the first closure, then .borrow() 
-    // to turn the Rc<RefCell<T>> into an &T, which we can then call the 
+    // of the function, rather than being borrowed.
+    //
+    // So, we move the debug_hdm_handle into the first closure, then .borrow()
+    // to turn the Rc<RefCell<T>> into an &T, which we can then call the
     // .get_debug_locations() on.
-    // 
+    //
     // Remember that those closures are **not** being run immediately, they are
     // instead run roughly every quarter second by the GUI.
     let _ = engage_gui(
