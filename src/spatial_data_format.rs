@@ -14,7 +14,7 @@
 //! More concretely, the header is encoded using [serde] and [ron]. In the file,
 //! it appears as follows:
 //!
-//! ```
+//! ```text
 //! (n_streams:A,sample_rate:B,tags:[C, D,...])
 //! ```
 //!
