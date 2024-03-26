@@ -10,6 +10,19 @@
 //! - Then there is a seperator, which is a byte of all 1s; `0xFF`.
 //! - Finally, the samples, which are `f32`s, interpolated from each stream
 //!   in order.
+//!
+//! More concretely, the header is encoded using [serde] and [ron]. In the file,
+//! it appears as follows:
+//!
+//! ```text
+//! (n_streams:A,sample_rate:B,tags:[C, D,...])
+//! ```
+//!
+//! Where:
+//!
+//! - `A` is the number of streams contained in the file
+//! - `B` is the sample rate in samples per second
+//! - `[C, D,...]` are tags, each associated with one stream
 
 #![allow(unused)]
 use serde::{Deserialize, Serialize};
@@ -385,8 +398,8 @@ impl GrapeFileBuilder {
 const A_FLOAT: f32 = 12.07843112945556640625;
 mod tests {
     use super::*;
-    use std::io::Cursor;
     use rand::distributions::{Distribution, Uniform};
+    use std::io::Cursor;
 
     #[test]
     fn write_and_read_path() {
@@ -401,6 +414,21 @@ mod tests {
 
         data.to_path(path).unwrap();
         let read_data = GrapeFile::from_path(path).unwrap();
+        assert_eq!(data, read_data);
+    }
+
+    #[test]
+    fn dump() {
+        let mut file = File::create("test.grape").unwrap();
+        let data = GrapeFile::builder()
+            .set_samplerate(1000)
+            .add_stream(&vec![A_FLOAT; 4], GrapeTag::X)
+            .add_stream(&vec![A_FLOAT; 4], GrapeTag::Y)
+            .build()
+            .unwrap();
+
+        data.to_file(&mut file).unwrap();
+        let read_data = GrapeFile::from_path("test.grape").unwrap();
         assert_eq!(data, read_data);
     }
 
@@ -546,9 +574,7 @@ mod tests {
             builder = builder.add_stream(&v, GrapeTag::Roll);
         }
 
-        let data = builder.set_samplerate(1000)
-            .build()
-            .unwrap();
+        let data = builder.set_samplerate(1000).build().unwrap();
 
         data.to_file(&mut buf).unwrap();
         buf.set_position(0);
