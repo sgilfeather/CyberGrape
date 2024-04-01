@@ -7,7 +7,6 @@ use crate::saf_raw;
 use libc::c_void;
 
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
-const DIST_DEFAULT: f32 = 1.0;
 const SAMP_RATE: i32 = 44100;
 const NUM_OUT_CHANNELS: usize = 2;
 const FRAME_SIZE: usize = 128;
