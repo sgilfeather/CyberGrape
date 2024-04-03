@@ -8,9 +8,9 @@ mod gui;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use cg::dummy_hdm::DummyHdm;
-use cg::localizer::localize_points;
-use cg::update_accumulator::UpdateAccumulator;
+use cybergrape::dummy_hdm::DummyHdm;
+use cybergrape::localizer::localize_points;
+use cybergrape::update_accumulator::UpdateAccumulator;
 use gui::engage_gui;
 
 fn main() {
