@@ -1,16 +1,15 @@
 name: Rust
 
-on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
-
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
   build:
+    on:
+    push:
+      branches: [ "main" ]
+    pull_request:
+      branches: [ "main" ]
 
     runs-on: macos-latest
 
@@ -39,6 +38,10 @@ jobs:
   deploy:
     # Add a dependency to the build job
     needs: build
+    on:
+    push:
+      branches: [ "main" ]
+
 
     # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
     permissions:
