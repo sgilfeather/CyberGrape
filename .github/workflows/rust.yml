@@ -22,3 +22,36 @@ jobs:
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+    - name: Make Documentation
+      run: 
+        - cargo doc --verbose --no-deps
+        - rm -rf ./docs
+        - echo "<meta http-equiv=\"refresh\" content=\"0; url=cg\">" > target/doc/index.html
+        - cp -r target/doc ./docs
+    - name: Upload Documentation Artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: "docs/"
+
+  deploy:
+  # Add a dependency to the build job
+  needs: build
+
+  # Grant GITHUB_TOKEN the permissions required to make a Pages deployment
+  permissions:
+    pages: write      # to deploy to Pages
+    id-token: write   # to verify the deployment originates from an appropriate source
+
+  # Deploy to the github-pages environment
+  environment:
+    name: github-pages
+    url: ${{ steps.deployment.outputs.page_url }}
+
+  # Specify runner + deployment step
+  runs-on: ubuntu-latest
+  steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
+
+
