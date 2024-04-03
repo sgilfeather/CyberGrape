@@ -36,7 +36,7 @@ jobs:
       run: |
         cargo doc --verbose --no-deps
         rm -rf ./docs
-        echo "<meta http-equiv=\"refresh\" content=\"0; url=cg\">" > target/doc/index.html
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=cybergrape\">" > target/doc/index.html
         rm target/doc/.lock
         cp -r target/doc ./docs
     - name: Upload Documentation Artifact
