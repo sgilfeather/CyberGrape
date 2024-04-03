@@ -5,7 +5,7 @@ edition = "2021"
 build = "build.rs"
 
 [lib]
-name = "cg"
+name = "cybergrape"
 
 [[bin]]
 name = "monitor"
