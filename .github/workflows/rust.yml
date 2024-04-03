@@ -23,11 +23,11 @@ jobs:
     - name: Run tests
       run: cargo test --verbose
     - name: Make Documentation
-      run: 
-        - cargo doc --verbose --no-deps
-        - rm -rf ./docs
-        - echo "<meta http-equiv=\"refresh\" content=\"0; url=cg\">" > target/doc/index.html
-        - cp -r target/doc ./docs
+      run: |
+        cargo doc --verbose --no-deps
+        rm -rf ./docs
+        echo "<meta http-equiv=\"refresh\" content=\"0; url=cg\">" > target/doc/index.html
+        cp -r target/doc ./docs
     - name: Upload Documentation Artifact
       uses: actions/upload-pages-artifact@v3
       with:
