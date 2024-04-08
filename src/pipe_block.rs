@@ -1,6 +1,6 @@
 //! TODO: Header
 
-use std::sync::mpsc::{Receiver, Sender};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 ///
 /// A stage in the CyberGrape pipeline, which performs a step of the
@@ -97,15 +97,39 @@ mod tests {
     #[test]
     fn test_mock_pipe_block() {
         let mock_comp = MockComponent::new();
-        let (tx, rx) = channel::<i32>();
+        let (test_tx, block_rx) = channel::<i32>();
+        let (block_tx, test_rx) = channel::<i32>();
 
         thread::spawn(move || {
-            let mock_pipe_block = PipeBlock::new(Box::new(mock_comp), tx, rx);
+            let mock_pipe_block = PipeBlock::new(Box::new(mock_comp), block_tx, block_rx);
             mock_pipe_block.run()
         });
 
+        assert_eq!(test_tx.send(0), Ok(()));
         // TODO: how can we create PipeBlock inside the closure and still be able to access tx and rx down here?
-        assert_eq!(tx.send(0), Ok(()));
-        assert_eq!(rx.recv(), Ok(1));
+        assert_eq!(test_rx.recv(), Ok(1));
+    }
+
+    #[test]
+    fn test_chained_pipe_block() {
+        let mock_comp_a = MockComponent::new();
+        let mock_comp_b = MockComponent::new();
+
+        let (test_tx, block_a_rx) = channel::<i32>();
+        let (block_a_tx, block_b_rx) = channel::<i32>();
+        let (block_b_tx, test_rx) = channel::<i32>();
+
+        thread::spawn(move || {
+            let mock_pipe_block = PipeBlock::new(Box::new(mock_comp_a), block_a_tx, block_a_rx);
+            mock_pipe_block.run()
+        });
+
+        thread::spawn(move || {
+            let mock_pipe_block = PipeBlock::new(Box::new(mock_comp_b), block_b_tx, block_b_rx);
+            mock_pipe_block.run()
+        });
+
+        assert_eq!(test_tx.send(0), Ok(()));
+        assert_eq!(test_rx.recv(), Ok(2));
     }
 }
