@@ -320,10 +320,10 @@ impl GrapeFileBuilder {
 
         let shortest = sample_vecs.iter().map(|v| v.len()).min();
         if let Some(shortest) = shortest {
-            samples.reserve_exact(shortest * sample_vecs.len() as usize);
+            samples.reserve_exact(shortest * sample_vecs.len());
             for sample_idx in 0..shortest {
-                for stream_idx in 0..sample_vecs.len() {
-                    samples.push(sample_vecs[stream_idx as usize][sample_idx]);
+                for stream in &sample_vecs {
+                    samples.push(stream[sample_idx]);
                 }
             }
         };
@@ -358,9 +358,9 @@ impl GrapeFileBuilder {
                 .map(|v| v.last().unwrap_or(&0.0))
                 .cloned()
                 .collect();
-            samples.reserve_exact(longest * sample_vecs.len() as usize);
+            samples.reserve_exact(longest * sample_vecs.len());
             for sample_idx in 0..longest {
-                for stream_idx in 0..sample_vecs.len() as usize {
+                for stream_idx in 0..sample_vecs.len() {
                     samples.push(
                         *sample_vecs[stream_idx]
                             .get(sample_idx)
