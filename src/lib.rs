@@ -1,5 +1,6 @@
 pub mod dummy_hdm;
 pub mod hardware_data_manager;
+pub mod hardware_message_decoder;
 pub mod localizer;
 pub mod saf;
 mod saf_raw;
