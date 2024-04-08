@@ -1,6 +1,9 @@
 //! TODO
 
+use cybergrape::hardware_message_decoder::UUDFEvent;
 use std::io;
+use std::str;
+use str::FromStr;
 
 use serial2::SerialPort;
 
@@ -32,7 +35,12 @@ fn main() {
         for &c in buffer.iter().take(read_len) {
             read_buf.push(c);
             if c == b'\n' {
-                print!("Received: {}", String::from_utf8_lossy(&read_buf));
+                print!(
+                    "Received: {:#?}",
+                    UUDFEvent::from_str(
+                        str::from_utf8(&read_buf).expect("Should be utf-8 encodable")
+                    )
+                );
                 read_buf.clear();
             }
         }
