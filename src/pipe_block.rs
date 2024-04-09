@@ -12,8 +12,8 @@ pub trait Component {
     fn convert(self: &Self, input: Self::InData) -> Self::OutData;
 }
 
-/// Runs on its own thread. On receiving data of type A on input, the
-/// PipeBlock converts them to data of type B, and sends it to its output
+/// Runs on its own thread. On receiving data of type `I` on input, the
+/// PipeBlock converts them to data of type `O`, and sends it to its output
 /// channel.
 pub struct PipeBlock<'a, I, O> {
     // component is an object that implments trait Component, and Rust cannot
