@@ -3,10 +3,8 @@
 use std::sync::mpsc::{Receiver, Sender};
 use log::{error, info};
 
-///
 /// A stage in the CyberGrape pipeline, which performs a step of the
 /// data aggregation, binauralization, or music playback process.
-///
 pub trait Component {
     type InData;
     type OutData;
@@ -14,14 +12,12 @@ pub trait Component {
     fn convert(self: &Self, input: Self::InData) -> Self::OutData;
 }
 
-///
 /// Runs on its own thread. On receiving data of type A on input, the
 /// PipeBlock converts them to data of type B, and sends it to its output
 /// channel.
-///
 pub struct PipeBlock<'a, I, O> {
-    // component is an object of trait Component, and Rust cannot know
-    // how big component is at runtime. any 'dynamically typed' trait
+    // component is an object that implments trait Component, and Rust cannot
+    // know how big component is at runtime. any 'dynamically typed' trait
     // object must be marked with the `dyn` keyboard, post 2021
 
     // the Box ensures that this PipeBlock owns the heap-alloc'd ref to the
@@ -34,9 +30,8 @@ pub struct PipeBlock<'a, I, O> {
     input: Receiver<I>,
 }
 
-///
 impl<'a, I, O> PipeBlock<'a, I, O> {
-    ///
+    /// TODO
     fn new(
         comp: Box<dyn Component<InData = I, OutData = O> + 'a>,
         tx: Sender<O>,
@@ -49,7 +44,7 @@ impl<'a, I, O> PipeBlock<'a, I, O> {
         }
     }
 
-    ///
+    /// TODO
     fn run(self: &Self) {
         while let Ok(data) = self.input.recv() {
             let out_data = self.component.convert(data);
