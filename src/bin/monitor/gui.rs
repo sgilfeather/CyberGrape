@@ -19,7 +19,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use cg::Point;
+use cybergrape::Point;
 
 // This is a function pointer in Rust! The important bit is on the right side. The
 // FnMut says that it is a function, () means that it takes no arguments, and

@@ -4,6 +4,7 @@ pub mod localizer;
 mod pipe_block;
 pub mod saf;
 mod saf_raw;
+pub mod spatial_data_format;
 pub mod update_accumulator;
 
 use std::fmt::Display;
