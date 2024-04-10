@@ -2,22 +2,21 @@
 
 use nom::{
     bytes::complete::tag,
-    character::complete::{alphanumeric0, char, i32, one_of, u32},
-    combinator::map,
+    character::complete::{alphanumeric0, char, hex_digit1, i32, u32},
+    combinator::{map, map_res},
     error::Error,
-    multi::count,
     sequence::{delimited, preceded, tuple},
     Finish, IResult,
 };
 
 use std::str::FromStr;
 
-/// The various data found in a UUDF event that comes over UART from the 
+/// The various data found in a UUDF event that comes over UART from the
 /// u-blox antenna board.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFEvent {
     /// TODO I think that this is tag ID
-    instance_id: String,
+    instance_id: u64,
     /// Signal strength
     rssi: i32,
     /// Azimuth to tag
@@ -29,7 +28,7 @@ pub struct UUDFEvent {
     /// TODO what does it mean "channel", is this which Bluetooth channel?
     channel: u32,
     /// The ID of the antenna
-    anchor_id: String,
+    anchor_id: u64,
     /// The user can configure this with `AT+UDFCFG` tag 2
     user_defined: String,
     /// A timestamp (TODO determine units)
@@ -39,14 +38,11 @@ pub struct UUDFEvent {
     sequence: u32,
 }
 
-fn parse_id(s: &str) -> IResult<&str, String> {
-    map(
-        count(one_of("0123456789ABCDEFabcdef"), 12),
-        |cs: Vec<char>| cs.into_iter().map(|c| c.to_ascii_uppercase()).collect(),
-    )(s)
+fn parse_id(s: &str) -> IResult<&str, u64> {
+    map_res(hex_digit1, |d: &str| u64::from_str_radix(&d, 16))(s)
 }
 
-fn parse_quoted_id(s: &str) -> IResult<&str, String> {
+fn parse_quoted_id(s: &str) -> IResult<&str, u64> {
     delimited(char('\"'), parse_id, char('\"'))(s)
 }
 
@@ -56,7 +52,6 @@ fn parse_string(s: &str) -> IResult<&str, String> {
         |cs: &str| cs.to_owned(),
     )(s)
 }
-
 
 fn parse_uudf_elevent(s: &str) -> IResult<&str, UUDFEvent> {
     map(
@@ -125,13 +120,13 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: "CCF9578E0D8A".to_owned(),
+                instance_id: 0xCCF9578E0D8A,
                 rssi: -42,
                 angle_1: 20,
                 angle_2: 0,
                 reserved: -43,
                 channel: 37,
-                anchor_id: "CCF9578E0D89".to_owned(),
+                anchor_id: 0xCCF9578E0D89,
                 user_defined: "".to_owned(),
                 timestamp: 15869,
                 sequence: 23,
@@ -149,13 +144,13 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: "CCF9578E0D8B".to_owned(),
+                instance_id: 0xCCF9578E0D8B,
                 rssi: -41,
                 angle_1: 10,
                 angle_2: 4,
                 reserved: -42,
                 channel: 38,
-                anchor_id: "CCF9578E0D89".to_owned(),
+                anchor_id: 0xCCF9578E0D89,
                 user_defined: "".to_owned(),
                 timestamp: 15892,
                 sequence: 24,
@@ -173,13 +168,13 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: "CCF9578E0D8A".to_owned(),
+                instance_id: 0xCCF9578E0D8A,
                 rssi: -42,
                 angle_1: -10,
                 angle_2: 2,
                 reserved: -43,
                 channel: 39,
-                anchor_id: "CCF9578E0D89".to_owned(),
+                anchor_id: 0xCCF9578E0D89,
                 user_defined: "".to_owned(),
                 timestamp: 15921,
                 sequence: 25,
