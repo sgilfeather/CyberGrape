@@ -7,6 +7,7 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(unused)]
+#![allow(rustdoc::broken_intra_doc_links)]
 
 // Now we finally copy/paste in the bindings that were built by bindgen
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));

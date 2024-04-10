@@ -1,3 +1,5 @@
+//! TODO
+
 use nom::{
     bytes::complete::tag,
     character::complete::{alphanumeric0, char, i32, one_of, u32},
@@ -10,17 +12,30 @@ use nom::{
 
 use std::str::FromStr;
 
+/// The various data found in a UUDF event that comes over UART from the 
+/// u-blox antenna board.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFEvent {
+    /// TODO I think that this is tag ID
     instance_id: String,
-    rssi_first_polarization: i32,
+    /// Signal strength
+    rssi: i32,
+    /// Azimuth to tag
     angle_1: i32,
+    /// Elevation to tag
     angle_2: i32,
+    /// u-blox won't say what they use this for...maybe curing cancer.
     reserved: i32,
+    /// TODO what does it mean "channel", is this which Bluetooth channel?
     channel: u32,
+    /// The ID of the antenna
     anchor_id: String,
+    /// The user can configure this with `AT+UDFCFG` tag 2
     user_defined: String,
+    /// A timestamp (TODO determine units)
     timestamp: u32,
+    /// What event this is. The first reading is 1, then the next one is 2
+    /// and so on.
     sequence: u32,
 }
 
@@ -42,23 +57,24 @@ fn parse_string(s: &str) -> IResult<&str, String> {
     )(s)
 }
 
+
 fn parse_uudf_elevent(s: &str) -> IResult<&str, UUDFEvent> {
     map(
         tuple((
             preceded(tag("+UUDF:"), parse_id),
-            preceded(tag(","), i32),
-            preceded(tag(","), i32),
-            preceded(tag(","), i32),
-            preceded(tag(","), i32),
-            preceded(tag(","), u32),
-            preceded(tag(","), parse_quoted_id),
-            preceded(tag(","), parse_string),
-            preceded(tag(","), u32),
-            preceded(tag(","), u32),
+            preceded(char(','), i32),
+            preceded(char(','), i32),
+            preceded(char(','), i32),
+            preceded(char(','), i32),
+            preceded(char(','), u32),
+            preceded(char(','), parse_quoted_id),
+            preceded(char(','), parse_string),
+            preceded(char(','), u32),
+            preceded(char(','), u32),
         )),
         |(
             instance_id,
-            rssi_first_polarization,
+            rssi,
             angle_1,
             angle_2,
             reserved,
@@ -69,7 +85,7 @@ fn parse_uudf_elevent(s: &str) -> IResult<&str, UUDFEvent> {
             sequence,
         )| UUDFEvent {
             instance_id,
-            rssi_first_polarization,
+            rssi,
             angle_1,
             angle_2,
             reserved,
@@ -110,7 +126,7 @@ mod tests {
             res,
             UUDFEvent {
                 instance_id: "CCF9578E0D8A".to_owned(),
-                rssi_first_polarization: -42,
+                rssi: -42,
                 angle_1: 20,
                 angle_2: 0,
                 reserved: -43,
@@ -134,7 +150,7 @@ mod tests {
             res,
             UUDFEvent {
                 instance_id: "CCF9578E0D8B".to_owned(),
-                rssi_first_polarization: -41,
+                rssi: -41,
                 angle_1: 10,
                 angle_2: 4,
                 reserved: -42,
@@ -158,7 +174,7 @@ mod tests {
             res,
             UUDFEvent {
                 instance_id: "CCF9578E0D8A".to_owned(),
-                rssi_first_polarization: -42,
+                rssi: -42,
                 angle_1: -10,
                 angle_2: 2,
                 reserved: -43,
