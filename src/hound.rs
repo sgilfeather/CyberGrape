@@ -47,7 +47,7 @@ fn append_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, writer: Wav
 // finalize once all samples have been written to the WAV file. this will also
 // happen automatically once the WavWriter is dropped, but calling this allows 
 // for controlled error checking 
-fn finalize_stereo_output(writer:WavWriter) -> Result {
+fn finalize_stereo_output(writer:WavWriter) {
     writer.finalize().unwrap()
 }
 
