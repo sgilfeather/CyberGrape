@@ -66,6 +66,8 @@ fn init_wav_input(in_file: &'static str) -> WavReader {
     WavReader::new(fp).unwrap()
 }
 
+// given a WavReader, destroys it and cleans up memory associated with the
+// underlying File reader as well
 fn destroy_wav_input(reader: WavReader) {
     let mut r = WavReader::into_inner();
 
