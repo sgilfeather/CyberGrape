@@ -7,7 +7,6 @@ use crate::saf_raw;
 use libc::c_void;
 
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
-const DIST_DEFAULT: f32 = 1.0;
 const SAMP_RATE: i32 = 44100;
 const NUM_OUT_CHANNELS: usize = 2;
 const FRAME_SIZE: usize = 128;
@@ -192,7 +191,7 @@ impl Binauraliser for DummyBinauraliser {
 mod tests {
     use super::*;
 
-    use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
+    use hound::{SampleFormat, WavSpec, WavWriter};
     use std::f32::consts::PI;
 
     const MOCK_METADATA: BufferMetadata = BufferMetadata {
@@ -226,6 +225,7 @@ mod tests {
             .collect()
     }
 
+    #[allow(unused)]
     fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: &'static str) {
         let spec = WavSpec {
             channels: 2,

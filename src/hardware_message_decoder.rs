@@ -29,7 +29,7 @@ impl FromStr for HardwareEvent {
         {
             Ok((_remaining, event)) => Ok(event),
             Err(Error { input, code }) => Err(Error {
-                input: input.to_string(),
+                input: input.to_owned(),
                 code,
             }),
         }
@@ -47,7 +47,7 @@ impl FromStr for UUDFPEvent {
         match parse_uudfp_event(s).finish() {
             Ok((_remaining, event)) => Ok(event),
             Err(Error { input, code }) => Err(Error {
-                input: input.to_string(),
+                input: input.to_owned(),
                 code,
             }),
         }
@@ -79,6 +79,19 @@ pub struct UUDFEvent {
     /// What event this is. The first reading is 1, then the next one is 2
     /// and so on.
     sequence: u32,
+}
+
+impl FromStr for UUDFEvent {
+    type Err = Error<String>;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match parse_uudf_event(s).finish() {
+            Ok((_remaining, event)) => Ok(event),
+            Err(Error { input, code }) => Err(Error {
+                input: input.to_owned(),
+                code,
+            }),
+        }
+    }
 }
 
 fn parse_id(s: &str) -> IResult<&str, u64> {
@@ -152,18 +165,6 @@ fn parse_uudfp_event(s: &str) -> IResult<&str, UUDFPEvent> {
     )(s)
 }
 
-impl FromStr for UUDFEvent {
-    type Err = Error<String>;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match parse_uudf_event(s).finish() {
-            Ok((_remaining, event)) => Ok(event),
-            Err(Error { input, code }) => Err(Error {
-                input: input.to_string(),
-                code,
-            }),
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
