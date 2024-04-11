@@ -51,3 +51,25 @@ fn finalize_stereo_output(writer:WavWriter) -> Result {
     writer.finalize().unwrap()
 }
 
+// open a WAV file and return a WavReader, which then has a host of useful 
+// operations that are documented in the the hound specs:
+//      https://docs.rs/hound/latest/hound/struct.WavReader.html
+//
+//      most notably:
+//          .samples() / into_samples() which return iterators over samples
+//          .duration() which returns duration of the file in samples
+//          .len() which returns the number of values that samples() iterator 
+//                                                          will yield
+//
+fn init_wav_input(in_file: &'static str) -> WavReader {
+    let mut fp = File::open(in_file);
+    WavReader::new(fp).unwrap()
+}
+
+fn destroy_wav_input(reader: WavReader) {
+    let mut r = WavReader::into_inner();
+
+    // ensure file is closed 
+    drop(r); // this call ignores errors, so can remove this line if the file 
+             // is guaranteed to go out of scope anyways in the client 
+}
