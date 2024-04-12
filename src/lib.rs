@@ -1,9 +1,11 @@
 pub mod dummy_hdm;
 pub mod grape_block;
 pub mod hardware_data_manager;
+pub mod hardware_message_decoder;
 pub mod localizer;
 pub mod saf;
 mod saf_raw;
+pub mod spatial_data_format;
 pub mod update_accumulator;
 
 use std::fmt;
