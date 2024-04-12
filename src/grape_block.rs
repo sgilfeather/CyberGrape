@@ -3,17 +3,31 @@
 //! each module can consume data from the preceding module, process it, and
 //! pass new data to the subsequent module in the CyberGrape pipeline.
 
-use crate::Component;
 use log::{info, warn};
 use std::fmt;
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::any::Any;
+use std::sync::mpsc::{Receiver, Sender};
+
+///
+/// A stage in the CyberGrape pipeline, which performs a step of the data
+/// aggregation, binauralization, or music playback process. All structs
+/// that perform a processing step in the CyberGrape system must implement
+/// Component, so that they can be integrated into the pipeline.
+///
+pub trait Component: fmt::Display {
+    type InData;
+    type OutData;
+    /// Converts an input of type A into an output of type B
+    fn convert(self: &Self, input: Self::InData) -> Self::OutData;
+}
+
 
 ///
 /// Runs on its own thread. On receiving data of type A on input, the
 /// GrapeBlock converts them to data of type B, and sends it to its output
 /// channel.
 ///
-pub struct GrapeBlock<'a, A, B> {
+pub struct GrapeBlock<'a, I, O> {
     // component is an object of trait Component, and Rust cannot know
     // how big component is at runtime. any 'dynamically typed' trait
     // object must be marked with the `dyn` keyboard, post 2021
@@ -23,9 +37,9 @@ pub struct GrapeBlock<'a, A, B> {
 
     // the lifetime 'a indicates that the inner Component cannot live longer
     // than the GrapeBlock!
-    component: Box<dyn Component<InData = A, OutData = B> + 'a>,
-    output: Sender<B>,
-    input: Receiver<A>,
+    component: Box<dyn Component<InData = I, OutData = O> + 'a>,
+    input: Receiver<I>,
+    output: Sender<O>,
 }
 
 impl<'a, I, O> GrapeBlock<'a, I, O> {
@@ -35,11 +49,9 @@ impl<'a, I, O> GrapeBlock<'a, I, O> {
     /// match the OutData type of its associated Component.
     pub fn new(
         component: Box<dyn Component<InData = I, OutData = O> + 'a>,
-        output: Sender<O>,
         input: Receiver<I>,
+        output: Sender<O>,
     ) -> Self {
-        env_logger::init();
-
         Self {
             component,
             input,
@@ -67,6 +79,7 @@ impl<'a, I, O> GrapeBlock<'a, I, O> {
 mod tests {
     use super::*;
     use std::thread;
+    use std::sync::mpsc::channel;
 
     /// Null MockComponent for compilation testing
     struct MockComponent {}
@@ -109,7 +122,7 @@ mod tests {
         let (block_tx, test_rx) = channel::<i32>();
 
         thread::spawn(move || {
-            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp), block_tx, block_rx);
+            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp), block_rx, block_tx);
             mock_grape_block.run()
         });
 
@@ -128,12 +141,12 @@ mod tests {
         let (block_b_tx, test_rx) = channel::<i32>();
 
         thread::spawn(move || {
-            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp_a), block_a_tx, block_a_rx);
+            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp_a), block_a_rx, block_a_tx);
             mock_grape_block.run()
         });
 
         thread::spawn(move || {
-            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp_b), block_b_tx, block_b_rx);
+            let mock_grape_block = GrapeBlock::new(Box::new(mock_comp_b), block_b_rx, block_b_tx);
             mock_grape_block.run()
         });
 
