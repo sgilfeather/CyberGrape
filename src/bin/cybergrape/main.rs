@@ -1,6 +1,6 @@
 //! TODO
 
-use cybergrape::hardware_message_decoder::UUDFEvent;
+use cybergrape::hardware_message_decoder::HardwareEvent;
 use std::io;
 use std::str;
 use str::FromStr;
@@ -35,12 +35,16 @@ fn main() {
         for &c in buffer.iter().take(read_len) {
             read_buf.push(c);
             if c == b'\n' {
-                print!(
-                    "Received: {:#?}",
-                    UUDFEvent::from_str(
-                        str::from_utf8(&read_buf).expect("Should be utf-8 encodable")
-                    )
-                );
+                match str::from_utf8(&read_buf) {
+                    Ok(s) => {
+                        println!("Received: {:?}", HardwareEvent::from_str(s));
+                    }
+                    // Often happens at the beginning of transmission when
+                    // there is still garbage in the hardware buffer
+                    Err(e) => {
+                        println!("Failed to decode utf-8: {:?}", e);
+                    }
+                }
                 read_buf.clear();
             }
         }

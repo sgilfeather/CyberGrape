@@ -58,8 +58,8 @@ impl FromStr for UUDFPEvent {
 /// u-blox antenna board.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFEvent {
-    /// TODO I think that this is tag ID
-    instance_id: u64,
+    /// The ID of the tag whose data is being reported
+    tag_id: u64,
     /// Signal strength
     rssi: i32,
     /// Azimuth to tag
@@ -69,12 +69,13 @@ pub struct UUDFEvent {
     /// u-blox won't say what they use this for...maybe curing cancer.
     reserved: i32,
     /// TODO what does it mean "channel", is this which Bluetooth channel?
+    /// Completely unclear from the u-blox documentation.
     channel: u32,
     /// The ID of the antenna
     anchor_id: u64,
     /// The user can configure this with `AT+UDFCFG` tag 2
     user_defined: String,
-    /// A timestamp (TODO determine units)
+    /// A timestamp in milliseconds since the listener block was powered on
     timestamp: u32,
     /// What event this is. The first reading is 1, then the next one is 2
     /// and so on.
@@ -141,7 +142,7 @@ fn parse_uudf_event(s: &str) -> IResult<&str, UUDFEvent> {
             timestamp,
             sequence,
         )| UUDFEvent {
-            instance_id,
+            tag_id: instance_id,
             rssi,
             angle_1,
             angle_2,
@@ -165,7 +166,6 @@ fn parse_uudfp_event(s: &str) -> IResult<&str, UUDFPEvent> {
     )(s)
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: 0xCCF9578E0D8A,
+                tag_id: 0xCCF9578E0D8A,
                 rssi: -42,
                 angle_1: 20,
                 angle_2: 0,
@@ -202,7 +202,7 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: 0xCCF9578E0D8B,
+                tag_id: 0xCCF9578E0D8B,
                 rssi: -41,
                 angle_1: 10,
                 angle_2: 4,
@@ -225,7 +225,7 @@ mod tests {
         assert_eq!(
             res,
             UUDFEvent {
-                instance_id: 0xCCF9578E0D8A,
+                tag_id: 0xCCF9578E0D8A,
                 rssi: -42,
                 angle_1: -10,
                 angle_2: 2,
@@ -260,7 +260,7 @@ mod tests {
         assert_eq!(
             res,
             HardwareEvent::UUDFEvent(UUDFEvent {
-                instance_id: 0xCCF9578E0D8A,
+                tag_id: 0xCCF9578E0D8A,
                 rssi: -42,
                 angle_1: 20,
                 angle_2: 0,
