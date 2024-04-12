@@ -191,7 +191,7 @@ impl Binauraliser for DummyBinauraliser {
 mod tests {
     use super::*;
 
-    use hound::{SampleFormat, WavReader, WavSpec, WavWriter};
+    use hound::{SampleFormat, WavSpec, WavWriter};
     use std::f32::consts::PI;
 
     const MOCK_METADATA: BufferMetadata = BufferMetadata {
@@ -225,6 +225,7 @@ mod tests {
             .collect()
     }
 
+    #[allow(unused)]
     fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: &'static str) {
         let spec = WavSpec {
             channels: 2,

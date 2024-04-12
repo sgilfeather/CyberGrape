@@ -417,7 +417,9 @@ mod tests {
         assert_eq!(data, read_data);
     }
 
+    // we are ignoring this test because it makes a file
     #[test]
+    #[ignore]
     fn dump() {
         let mut file = File::create("test.grape").unwrap();
         let data = GrapeFile::builder()
