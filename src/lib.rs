@@ -1,12 +1,29 @@
 pub mod dummy_hdm;
+pub mod grape_block;
 pub mod hardware_data_manager;
 pub mod localizer;
-mod pipe_block;
 pub mod saf;
 mod saf_raw;
 pub mod update_accumulator;
 
+use std::any::Any;
 use std::fmt::Display;
+
+///
+/// A stage in the CyberGrape pipeline, which performs a step of the data
+/// aggregation, binauralization, or music playback process. All structs
+/// that perform a processing step in the CyberGrape system must implement
+/// Component, so that they can be integrated into the pipeline.
+///
+pub trait Component: Display {
+    type InData;
+    type OutData;
+    /// Converts an input of type A into an output of type B
+    fn convert(self: &Self, input: Self::InData) -> Self::OutData;
+}
+
+// Type alias for a generic Component with any InData and OutData type
+type AnyComponent = dyn Component<InData = dyn Any, OutData = dyn Any>;
 
 // `Copy` is what we call types that do not need to be borrowed. This is very
 // similar to pass-by-value in C/C++. Basic types (integers, floats, etc.) are
