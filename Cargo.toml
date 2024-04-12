@@ -18,8 +18,10 @@ name = "cybergrape"
 [dependencies]
 clap = { version = "4.4.8", features = ["derive"] }
 crossterm = "0.27.0"
+env_logger = "0.11.3"
 hound = "3.5.1"
 libc = "0.2.150"
+log = "0.4.21"
 nom = "7.1.3"
 rand = "0.8.5"
 ratatui = "0.26.1"
