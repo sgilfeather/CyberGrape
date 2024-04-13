@@ -1,4 +1,5 @@
 pub mod dummy_hdm;
+pub mod hdm;
 pub mod grape_block;
 pub mod hardware_data_manager;
 pub mod hardware_message_decoder;

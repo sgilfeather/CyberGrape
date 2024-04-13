@@ -36,9 +36,6 @@ pub struct Update {
 /// A typed, clearable iterator that emits `Update`s when iterated upon. Designed
 /// to be maximally flexable to allow various implementations.
 pub trait HardwareDataManager: Iterator<Item = Update> {
-    /// Instantiates the `HardwareDatamanager`, whatever that means
-    fn new() -> Self;
-
     /// Empties the message queue contained within the `HardwareDataManager`.
     /// This is helpful when the consumer of this queue is unable to keep up
     /// with the `Update`s and wants to skip forward to the most recent items.

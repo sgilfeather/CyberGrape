@@ -73,12 +73,6 @@ enum Signal {
 
 // HardwareDataManager inherits from DummyHdm
 impl HardwareDataManager for DummyHdm {
-    /// Instante an instance with default settings.
-    fn new() -> Self {
-        let b = DummyHdmBuilder::new();
-        Self::new_from_builder(b) // invokes DummyHdm::new_from_builder
-    }
-
     /// Empty the update queue
     fn clear(&mut self) {
         self.msgs.lock().unwrap().clear();
@@ -100,6 +94,13 @@ impl Iterator for DummyHdm {
 // traits. Here are functions to instantiate from a DummyHdmBuilder, get a
 // builder, stop the HDM, and get the debug locations.
 impl DummyHdm {
+    /// Instante an instance with default settings.
+    fn new() -> Self {
+        let b = DummyHdmBuilder::new();
+        Self::new_from_builder(b) // invokes DummyHdm::new_from_builder
+    }
+
+
     /// Instantiates and starts a dummy hardware data manager from a `DummyHdmBuilder`
     ///
     /// Will continue to run and create new updates until `.stop()` is called.

@@ -1,13 +1,18 @@
 //! TODO
 
 use cybergrape::hardware_message_decoder::HardwareEvent;
-use std::io;
+use cybergrape::hdm::Hdm;
+use cybergrape::update_accumulator::UpdateAccumulator;
+use std::{cell::RefCell, io};
+use std::rc::Rc;
 use std::str;
 use str::FromStr;
+use log::{debug, info, warn, error};
 
 use serial2::SerialPort;
 
 fn main() {
+    env_logger::init();
     // Ask user for the device name
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
     println!("Available devices:");
@@ -26,6 +31,10 @@ fn main() {
     port.set_read_timeout(std::time::Duration::MAX)
         .expect("Failed to set read timeout");
 
+
+    let hdm = Rc::new(RefCell::new(Hdm::new()));
+    let mut accumulator = UpdateAccumulator::new(hdm.clone());
+
     // Read from the port and print the received data
     let mut buffer = [0; 256];
     let mut read_buf = Vec::new();
@@ -37,14 +46,26 @@ fn main() {
             if c == b'\n' {
                 match str::from_utf8(&read_buf) {
                     Ok(s) => {
-                        println!("Received: {:?}", HardwareEvent::from_str(s));
+                        match HardwareEvent::from_str(s) {
+                            Ok(HardwareEvent::UUDFEvent(e)) => {
+                                info!("Received {:#?}, adding to HDM", e);
+                                hdm.borrow_mut().add_update(e);
+                            },
+                            Ok(HardwareEvent::UUDFPEvent(ep)) => {
+                                info!("Received {:#?}", ep);
+                            },
+                            Err(e) => {
+                                warn!("Was unable to parse hardware message: {}", e);
+                            }
+                        }
                     }
                     // Often happens at the beginning of transmission when
                     // there is still garbage in the hardware buffer
                     Err(e) => {
-                        println!("Failed to decode utf-8: {:?}", e);
+                        warn!("Failed to decode utf-8: {:?}", e);
                     }
                 }
+                info!("Hdm has {:#?}", accumulator.get_status());
                 read_buf.clear();
             }
         }
