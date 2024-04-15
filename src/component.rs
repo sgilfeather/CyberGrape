@@ -4,8 +4,15 @@
 //! new data to the subsequent module in the CyberGrape pipeline.
 
 use log::{info, warn};
+use std::error::Error;
+use std::fmt::Display;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::{self, JoinHandle};
+
+#[derive(Debug)]
+pub enum ComponentError {
+    HoundError(hound::Error),
+}
 
 ///
 /// A stage in the CyberGrape pipeline, which performs a step of the data
@@ -21,7 +28,7 @@ pub trait Component: ToString {
     fn convert(self: &mut Self, input: Self::InData) -> Self::OutData;
 
     /// Cleans up at termination of pipeline
-    fn finalize(self: &mut Self) -> Result<(), String>;
+    fn finalize(self: &mut Self) -> Result<(), ComponentError>;
 }
 
 /// Runs the given Component on its own thread. On receiving data of type
@@ -44,7 +51,12 @@ where
             }
         }
 
-        if let Err(Msg) = component.finalize() {}
+        if let Err(component_error) = component.finalize() {
+            eprint!(
+                "{} : error during terminating : {component_error:?}.",
+                component.to_string(),
+            );
+        }
         info!("{} : terminated.", component.to_string());
     })
 }
@@ -71,7 +83,7 @@ mod tests {
             input + 1
         }
 
-        fn finalize(self: &mut Self) -> Result<(), String> {
+        fn finalize(self: &mut Self) -> Result<(), ComponentError> {
             Ok(())
         }
     }
