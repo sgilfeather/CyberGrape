@@ -6,6 +6,7 @@ use hound::{Error as HoundError, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
+use std::path::Path
 
 
 /// A monitor wrapper for the hound WavWriter that writes out binauralized
