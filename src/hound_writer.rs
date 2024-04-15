@@ -6,8 +6,7 @@ use hound::{Error as HoundError, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
-use std::path::Path
-
+use std::path::Path;
 
 /// A monitor wrapper for the hound WavWriter that writes out binauralized
 /// audio
@@ -17,7 +16,7 @@ pub struct HoundWriter {
 
 impl HoundWriter {
     /// Instantiates a new HoundWriter, which wraps the hound WavWriter
-    fn new(file: &'static str, wave_spec: WavSpec) -> Self {
+    fn new(file: impl AsRef<Path>, wave_spec: WavSpec) -> Self {
         let writer = WavWriter::create(file, wave_spec).unwrap();
 
         Self {
@@ -67,9 +66,9 @@ impl ToString for HoundWriter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use tempfile::NamedTempFile;
     use crate::component::run_component;
     use hound::{SampleFormat, WavReader};
-    use tempfile::NamedTempFile;
 
     use std::f32::consts::PI;
     use std::fs::remove_file;
@@ -92,7 +91,8 @@ mod tests {
     // read it back properly using a WavReader
     #[test]
     fn test_wav_writer_reader() {
-        let file_name = "/Users/Skylar.Gilfeather/CyberGrape/sine.wav";
+        let file = NamedTempFile::new().unwrap();
+        let file_name = file.path();
 
         let left_samps: Vec<f32> = create_sine_wave(100, C);
         let right_samps: Vec<f32> = create_sine_wave(100, C);
@@ -144,7 +144,8 @@ mod tests {
     /// WavReader and assert that all values are the same.
     #[test]
     fn test_hound_writer_read_write_one_frame() {
-        let file_name = "/Users/Skylar.Gilfeather/CyberGrape/sine.wav";
+        let file = NamedTempFile::new().unwrap();
+        let file_name = file.path();
 
         let left_samps: Vec<f32> = create_sine_wave(100, C);
         let right_samps: Vec<f32> = create_sine_wave(100, C);
