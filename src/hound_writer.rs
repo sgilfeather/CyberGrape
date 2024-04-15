@@ -7,10 +7,6 @@ use hound::{Error as HoundError, WavSpec, WavWriter};
 use std::fs::File;
 use std::io::BufWriter;
 
-const SAMP_RATE: u32 = 44100;
-const NUM_OUT_CHANNELS: u32 = 2;
-const BITS_PER_SAMPLE: u16 = 32;
-const FRAME_SIZE: i32 = 128;
 
 /// A monitor wrapper for the hound WavWriter that writes out binauralized
 /// audio
@@ -81,6 +77,10 @@ mod tests {
     use std::f32::consts::PI;
     use std::fs::remove_file;
     use std::{io::BufReader, sync::mpsc::channel};
+
+    const SAMP_RATE: u32 = 44100;
+    const BITS_PER_SAMPLE: u16 = 32;
+    const FRAME_SIZE: i32 = 128;
 
     const C: f32 = 261.61;
 

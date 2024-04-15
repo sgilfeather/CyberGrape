@@ -4,8 +4,6 @@
 //! new data to the subsequent module in the CyberGrape pipeline.
 
 use log::{info, warn};
-use std::error::Error;
-use std::fmt::Display;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::{self, JoinHandle};
 
