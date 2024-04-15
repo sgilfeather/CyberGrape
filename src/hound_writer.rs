@@ -52,12 +52,7 @@ impl Component for HoundWriter {
     fn finalize(self: &mut Self) -> Result<(), ComponentError> {
         let writer = self.writer.take().unwrap();
 
-        match writer.finalize() {
-            hound::Result::Ok(()) => return Ok(()),
-            hound::Result::Err(hound_error) => {
-                return Err(ComponentError::HoundError(hound_error));
-            }
-        }
+        writer.finalize().map_err(ComponentError::HoundError)
     }
 }
 
