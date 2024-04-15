@@ -1,5 +1,6 @@
 .vscode
 /target
+.DS_Store
 
 
 # Added by cargo
