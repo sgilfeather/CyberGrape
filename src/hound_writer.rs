@@ -69,6 +69,7 @@ mod tests {
     use super::*;
     use crate::component::run_component;
     use hound::{SampleFormat, WavReader};
+    use tempfile::NamedTempFile;
 
     use std::f32::consts::PI;
     use std::fs::remove_file;
