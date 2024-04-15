@@ -22,8 +22,8 @@ impl FromStr for HardwareEvent {
     type Err = Error<String>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match alt((
-            map(parse_uudf_event, |e| HardwareEvent::UUDFEvent(e)),
-            map(parse_uudfp_event, |e| HardwareEvent::UUDFPEvent(e)),
+            map(parse_uudf_event, HardwareEvent::UUDFEvent),
+            map(parse_uudfp_event, HardwareEvent::UUDFPEvent),
         ))(s)
         .finish()
         {
@@ -98,7 +98,7 @@ impl FromStr for UUDFEvent {
 fn parse_id(s: &str) -> IResult<&str, u64> {
     map_res(hex_digit1, |d: &str| {
         if d.len() == 12 {
-            u64::from_str_radix(&d, 16)
+            u64::from_str_radix(d, 16)
         } else {
             u64::from_str_radix("hey", 0)
         }

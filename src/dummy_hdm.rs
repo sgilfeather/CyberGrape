@@ -95,11 +95,10 @@ impl Iterator for DummyHdm {
 // builder, stop the HDM, and get the debug locations.
 impl DummyHdm {
     /// Instante an instance with default settings.
-    fn new() -> Self {
+    pub fn new() -> Self {
         let b = DummyHdmBuilder::new();
         Self::new_from_builder(b) // invokes DummyHdm::new_from_builder
     }
-
 
     /// Instantiates and starts a dummy hardware data manager from a `DummyHdmBuilder`
     ///
@@ -181,6 +180,12 @@ impl DummyHdm {
     /// Returns the **true** locations of the objects in the dummy HDM.
     pub fn get_debug_locations(&self) -> Vec<Point> {
         self.debug_coordinates.clone()
+    }
+}
+
+impl Default for DummyHdm {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

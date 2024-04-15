@@ -5,7 +5,6 @@
 
 use log::{info, warn};
 use std::fmt;
-use std::any::Any;
 use std::sync::mpsc::{Receiver, Sender};
 
 ///
@@ -18,9 +17,8 @@ pub trait Component: fmt::Display {
     type InData;
     type OutData;
     /// Converts an input of type A into an output of type B
-    fn convert(self: &Self, input: Self::InData) -> Self::OutData;
+    fn convert(&self, input: Self::InData) -> Self::OutData;
 }
-
 
 ///
 /// Runs on its own thread. On receiving data of type A on input, the
@@ -63,7 +61,7 @@ impl<'a, I, O> GrapeBlock<'a, I, O> {
     /// it calls convert() from its associated Component on the input data,
     /// and writes the result to its output channel. The GrapeBlock
     /// terminates when it receives an Err on its input channel.
-    pub fn run(self: &Self) {
+    pub fn run(&self) {
         while let Ok(data) = self.input.recv() {
             let out_data = self.component.convert(data);
             if let Err(error) = self.output.send(out_data) {
@@ -78,8 +76,8 @@ impl<'a, I, O> GrapeBlock<'a, I, O> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::thread;
     use std::sync::mpsc::channel;
+    use std::thread;
 
     /// Null MockComponent for compilation testing
     struct MockComponent {}

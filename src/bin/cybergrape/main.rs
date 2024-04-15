@@ -3,11 +3,11 @@
 use cybergrape::hardware_message_decoder::HardwareEvent;
 use cybergrape::hdm::Hdm;
 use cybergrape::update_accumulator::UpdateAccumulator;
-use std::{cell::RefCell, io};
+use log::{debug, info, warn};
 use std::rc::Rc;
 use std::str;
+use std::{cell::RefCell, io};
 use str::FromStr;
-use log::{debug, info, warn, error};
 
 use serial2::SerialPort;
 
@@ -31,13 +31,13 @@ fn main() {
     port.set_read_timeout(std::time::Duration::MAX)
         .expect("Failed to set read timeout");
 
-
     let hdm = Rc::new(RefCell::new(Hdm::new()));
     let mut accumulator = UpdateAccumulator::new(hdm.clone());
 
     // Read from the port and print the received data
     let mut buffer = [0; 256];
     let mut read_buf = Vec::new();
+
     loop {
         let read_len = port.read(&mut buffer).expect("Device disconnected");
 
@@ -45,20 +45,18 @@ fn main() {
             read_buf.push(c);
             if c == b'\n' {
                 match str::from_utf8(&read_buf) {
-                    Ok(s) => {
-                        match HardwareEvent::from_str(s) {
-                            Ok(HardwareEvent::UUDFEvent(e)) => {
-                                info!("Received {:#?}, adding to HDM", e);
-                                hdm.borrow_mut().add_update(e);
-                            },
-                            Ok(HardwareEvent::UUDFPEvent(ep)) => {
-                                info!("Received {:#?}", ep);
-                            },
-                            Err(e) => {
-                                warn!("Was unable to parse hardware message: {}", e);
-                            }
+                    Ok(s) => match HardwareEvent::from_str(s) {
+                        Ok(HardwareEvent::UUDFEvent(e)) => {
+                            debug!("Received {:#?}, adding to HDM", e);
+                            hdm.borrow_mut().add_update(e);
                         }
-                    }
+                        Ok(HardwareEvent::UUDFPEvent(ep)) => {
+                            debug!("Received {:#?}", ep);
+                        }
+                        Err(e) => {
+                            warn!("Was unable to parse hardware message: {}", e);
+                        }
+                    },
                     // Often happens at the beginning of transmission when
                     // there is still garbage in the hardware buffer
                     Err(e) => {
@@ -66,6 +64,7 @@ fn main() {
                     }
                 }
                 info!("Hdm has {:#?}", accumulator.get_status());
+
                 read_buf.clear();
             }
         }
