@@ -4,7 +4,6 @@
 //! new data to the subsequent module in the CyberGrape pipeline.
 
 use log::{info, warn};
-use std::fmt;
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::{self, JoinHandle};
 
@@ -14,19 +13,22 @@ use std::thread::{self, JoinHandle};
 /// that perform a processing step in the CyberGrape system must implement
 /// Component, so that they can be integrated into the pipeline.
 ///
-pub trait Component: fmt::Display {
+pub trait Component: ToString {
     type InData;
     type OutData;
-    /// Converts an input of type A into an output of type B
-    fn convert(self: &Self, input: Self::InData) -> Self::OutData;
-}
 
+    /// Converts an input of type A into an output of type B
+    fn convert(self: &mut Self, input: Self::InData) -> Self::OutData;
+
+    /// Cleans up at termination of pipeline
+    fn finalize(self: &mut Self) -> Result<(), String>;
+}
 
 /// Runs the given Component on its own thread. On receiving data of type
 /// InData on the input channel, the Component converts them to data of type
 /// OutData and sends it to the output channel.
 pub fn run_component<C: Component + std::marker::Send + 'static>(
-    component: Box<C>,
+    mut component: Box<C>,
     input: Receiver<<C as Component>::InData>,
     output: Sender<<C as Component>::OutData>,
 ) -> JoinHandle<()>
@@ -42,10 +44,10 @@ where
             }
         }
 
+        if let Err(Msg) = component.finalize() {}
         info!("{} : terminated.", component.to_string());
     })
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -65,27 +67,24 @@ mod tests {
         type InData = i32;
         type OutData = i32;
 
-        fn convert(self: &Self, input: i32) -> i32 {
+        fn convert(self: &mut Self, input: i32) -> i32 {
             input + 1
         }
-    }
 
-    impl fmt::Display for MockComponent {
-        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-            write!(f, "MockComponent")
+        fn finalize(self: &mut Self) -> Result<(), String> {
+            Ok(())
         }
     }
 
-    /// Checks that Component can be implemented for custom inner types
-    #[test]
-    fn test_mock_component() {
-        let mock_comp = MockComponent::new();
-        assert_eq!(mock_comp.convert(0), 1);
+    impl ToString for MockComponent {
+        fn to_string(&self) -> String {
+            "MockComponent".to_string()
+        }
     }
 
-    /// Checks that a GrapeBlock's generic input and output types can be
-    /// specified. Checks that writing a value to the GrapeBlock's input
-    /// produces that value, converted, in the GrapeBlock's output
+    /// Checks that a Component's generic input and output types can be
+    /// specified. Checks that writing a value to the Component's input
+    /// produces that value, converted, in the Component's output
     #[test]
     fn test_mock_component() {
         let mock_comp = MockComponent::new();
@@ -95,7 +94,7 @@ mod tests {
         run_component(Box::new(mock_comp), block_rx, block_tx);
 
         assert_eq!(test_tx.send(0), Ok(()));
-        // TODO: how can we create GrapeBlock inside the closure and still be able to access tx and rx down here?
+        // TODO: how can we create Component inside the closure and still be able to access tx and rx down here?
         assert_eq!(test_rx.recv(), Ok(1));
     }
 

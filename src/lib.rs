@@ -1,6 +1,7 @@
+pub mod component;
 pub mod dummy_hdm;
-pub mod grape_block;
 pub mod hardware_data_manager;
+pub mod hound_writer;
 pub mod localizer;
 pub mod saf;
 mod saf_raw;
