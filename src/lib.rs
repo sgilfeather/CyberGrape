@@ -7,6 +7,7 @@ pub mod saf;
 mod saf_raw;
 pub mod spatial_data_format;
 pub mod update_accumulator;
+pub mod args;
 
 use std::fmt;
 
