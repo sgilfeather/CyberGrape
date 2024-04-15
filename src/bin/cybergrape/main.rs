@@ -3,13 +3,10 @@
 use cybergrape::hardware_message_decoder::HardwareEvent;
 use cybergrape::hdm::Hdm;
 use cybergrape::update_accumulator::UpdateAccumulator;
-use log::{debug, info, warn};
-use std::rc::Rc;
-use std::str;
-use std::{cell::RefCell, io};
-use str::FromStr;
 
+use log::{debug, info, warn};
 use serial2::SerialPort;
+use std::{cell::RefCell, io, rc::Rc, str, str::FromStr};
 
 fn main() {
     env_logger::init();

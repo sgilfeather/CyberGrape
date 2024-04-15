@@ -1,10 +1,11 @@
 use crate::hardware_data_manager::{HardwareDataManager, Update};
 use crate::hardware_message_decoder::UUDFEvent;
 
-use std::collections::VecDeque;
-use std::f64::consts::PI;
-use std::sync::{Arc, Mutex};
-
+use std::{
+    collections::VecDeque,
+    f64::consts::PI,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Debug, Default)]
 pub struct Hdm {
