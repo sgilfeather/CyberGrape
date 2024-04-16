@@ -3,7 +3,7 @@
 use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
 use std::{
     cell::RefCell,
-    collections::{hash_map, HashMap, VecDeque},
+    collections::{HashMap, VecDeque},
     rc::Rc,
 };
 
@@ -44,19 +44,10 @@ where
     /// of blocks. Essentially, the most updated data available.
     pub fn get_status(&mut self) -> Vec<Update> {
         for update in self.hdm_handle.borrow_mut().by_ref() {
-            if let hash_map::Entry::Vacant(e) =
-                self.accumulated_updates.entry((update.src, update.dst))
-            {
-                let mut v = VecDeque::new();
-                v.push_back(update.clone());
-                e.insert(v);
-            } else {
-                let v = self
-                    .accumulated_updates
-                    .get_mut(&(update.src, update.dst))
-                    .expect("This really should exist, we just checked");
-                v.push_back(update);
-            }
+            self.accumulated_updates
+                .entry((update.src, update.dst))
+                .and_modify(|v| v.push_back(update.clone()))
+                .or_insert_with(|| VecDeque::from(vec![update.clone()]));
         }
 
         // Return a copy of the most recent updates, in a Vec rather than a HashMap
@@ -73,7 +64,7 @@ where
                         azm: l.azm + r.azm,
                         ..l
                     })
-                    .unwrap_or(v[0].clone());
+                    .expect("There should be some elements here");
 
                 Update {
                     elv: sum.elv / len,
@@ -85,7 +76,7 @@ where
 
         for v in self.accumulated_updates.values_mut() {
             let len = v.len();
-            if len > 50 {
+            if len > 100 {
                 let to_drop = len - 50;
                 v.drain(0..to_drop);
             }
