@@ -3,6 +3,7 @@ pub mod dummy_hdm;
 pub mod hardware_data_manager;
 pub mod hound_writer;
 pub mod hardware_message_decoder;
+pub mod hdm;
 pub mod localizer;
 pub mod saf;
 mod saf_raw;

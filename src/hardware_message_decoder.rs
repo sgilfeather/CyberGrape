@@ -22,8 +22,8 @@ impl FromStr for HardwareEvent {
     type Err = Error<String>;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match alt((
-            map(parse_uudf_event, |e| HardwareEvent::UUDFEvent(e)),
-            map(parse_uudfp_event, |e| HardwareEvent::UUDFPEvent(e)),
+            map(parse_uudf_event, HardwareEvent::UUDFEvent),
+            map(parse_uudfp_event, HardwareEvent::UUDFPEvent),
         ))(s)
         .finish()
         {
@@ -38,7 +38,7 @@ impl FromStr for HardwareEvent {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFPEvent {
-    instance_id: u64,
+    pub instance_id: u64,
 }
 
 impl FromStr for UUDFPEvent {
@@ -59,27 +59,27 @@ impl FromStr for UUDFPEvent {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFEvent {
     /// The ID of the tag whose data is being reported
-    tag_id: u64,
+    pub tag_id: u64,
     /// Signal strength
-    rssi: i32,
+    pub rssi: i32,
     /// Azimuth to tag
-    angle_1: i32,
+    pub angle_1: i32,
     /// Elevation to tag
-    angle_2: i32,
+    pub angle_2: i32,
     /// u-blox won't say what they use this for...maybe curing cancer.
     reserved: i32,
     /// TODO what does it mean "channel", is this which Bluetooth channel?
     /// Completely unclear from the u-blox documentation.
-    channel: u32,
+    pub channel: u32,
     /// The ID of the antenna
-    anchor_id: u64,
+    pub anchor_id: u64,
     /// The user can configure this with `AT+UDFCFG` tag 2
-    user_defined: String,
+    pub user_defined: String,
     /// A timestamp in milliseconds since the listener block was powered on
-    timestamp: u32,
+    pub timestamp: u32,
     /// What event this is. The first reading is 1, then the next one is 2
     /// and so on.
-    sequence: u32,
+    pub sequence: u32,
 }
 
 impl FromStr for UUDFEvent {
@@ -98,7 +98,7 @@ impl FromStr for UUDFEvent {
 fn parse_id(s: &str) -> IResult<&str, u64> {
     map_res(hex_digit1, |d: &str| {
         if d.len() == 12 {
-            u64::from_str_radix(&d, 16)
+            u64::from_str_radix(d, 16)
         } else {
             u64::from_str_radix("hey", 0)
         }
