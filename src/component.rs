@@ -50,7 +50,7 @@ where
         }
 
         if let Err(component_error) = component.finalize() {
-            eprint!(
+            warn!(
                 "{} : error during terminating : {component_error:?}.",
                 component.to_string(),
             );
