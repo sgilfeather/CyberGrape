@@ -49,7 +49,7 @@ impl Component for HoundWriter {
     /// Clean up WavWriter after writing all audio data from pipeline. This
     /// This happens automatically when the WavWriter is dropped, but
     /// calling this gives us controlled error checking.
-    fn finalize(self: &mut Self) -> Result<(), ComponentError> {
+    fn finalize(self: Self) -> Result<(), ComponentError> {
         let writer = self.writer.take().unwrap();
 
         writer.finalize().map_err(ComponentError::HoundError)

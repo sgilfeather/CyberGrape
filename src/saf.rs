@@ -2,6 +2,7 @@
 
 use std::ptr::{addr_of_mut, null, null_mut};
 
+use crate::component::{Component, ComponentError};
 use crate::saf_raw;
 
 use libc::c_void;
@@ -171,6 +172,31 @@ impl Drop for BinauraliserNF {
         }
     }
 }
+
+/// Implements Component functionality for a reference to a BinauraliserNF,
+impl Component for BinauraliserNF {
+    type InData = &[(BufferMetadata, &[f32])];
+    type OutData = (Vec<f32>, Vec<f32>);
+
+    ///
+    fn convert(self: &mut Self, input: Self::InData) -> Self::OutData {
+        return self.process(input);
+    }
+
+    ///
+    fn finalize(self: &mut Self) -> Result<(), ComponentError> {
+        drop(self);
+        Ok(())
+    }
+}
+
+impl ToString for &mut BinauraliserNF {
+    /// Converts the BinauraliserNF to a String, i.e. returns its name
+    fn to_string(&self) -> String {
+        "BinauralizerNF".to_string()
+    }
+}
+
 
 struct DummyBinauraliser {}
 
