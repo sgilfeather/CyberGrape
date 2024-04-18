@@ -1,13 +1,18 @@
 //! TODO
 
-use cybergrape::hardware_message_decoder::HardwareEvent;
+use cybergrape::{hardware_message_decoder::HardwareEvent, args::GrapeArgs};
 use std::io;
 use std::str;
 use str::FromStr;
+use clap::Parser;
 
 use serial2::SerialPort;
 
 fn main() {
+    let args = GrapeArgs::parse();
+
+    // logic to parse serial vs binaural arguments— args.whatever
+
     // Ask user for the device name
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
     println!("Available devices:");
