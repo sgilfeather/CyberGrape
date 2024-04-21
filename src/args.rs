@@ -1,15 +1,11 @@
 // Commandline argument parser using clap for CyberGrape
 
-use clap:: {
-    Args, 
-    Parser,
-    Subcommand
-};
+use clap::{Args, Parser, Subcommand};
 
 #[derive(Debug, Parser)]
 #[clap(version, about)]
 pub struct GrapeArgs {
-    #[command(subcommand,long_about)]
+    #[command(subcommand, long_about)]
     /// Which task to perform, serialization or binauralization
     pub command: CommandTask,
     /// Sample rate of the audio file, in gHz
@@ -23,7 +19,6 @@ pub struct GrapeArgs {
     // pub device_path: String
 }
 
-
 #[derive(Debug, Subcommand)]
 pub enum CommandTask {
     /// Encode positional data to a file in the GrapeFile format
@@ -31,7 +26,7 @@ pub enum CommandTask {
     Serial(SerialCommand),
     /// Combine N audio samples into a binauralized WAV file
     #[command(about)]
-    Binaural(BinauralCommand)
+    Binaural(BinauralCommand),
 }
 
 #[derive(Debug, Args)]
@@ -39,7 +34,7 @@ pub enum CommandTask {
 pub struct SerialCommand {
     /// Filename for serialization output to be written to
     #[arg(short = 'f', long = "file")]
-    pub serial_filename: String
+    pub serial_filename: String,
 }
 
 #[derive(Debug, Args)]
@@ -54,5 +49,5 @@ pub struct BinauralCommand {
     /// This list is of arbitrary length and will parse until it hits another flag or the end of the command
     #[arg(short = 'f', long = "files")]
     #[clap(num_args = 1..)]
-    pub filenames: Vec<String>
+    pub filenames: Vec<String>,
 }

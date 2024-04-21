@@ -1,7 +1,11 @@
 //! TODO
 
 use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::RefCell,
+    collections::{HashMap, VecDeque},
+    rc::Rc,
+};
 
 /// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
 /// accumulates them. It can be queried for the most recent updates using `.get_status()`.
@@ -17,7 +21,7 @@ where
     hdm_handle: Rc<RefCell<Hdm>>,
 
     // A HashMap mapping `(Id, Id)` pairs to `Update`s.
-    accumulated_updates: HashMap<(Id, Id), Update>,
+    accumulated_updates: HashMap<(Id, Id), VecDeque<Update>>,
 }
 
 // We see `Hdm` in three places here. First, it is declared as a type for use
@@ -39,18 +43,45 @@ where
     /// Returns a `Vec` contatining the most recent `Update`s for all pairs
     /// of blocks. Essentially, the most updated data available.
     pub fn get_status(&mut self) -> Vec<Update> {
-        // Iterate through the hdm and collect all of the updates. Since `hdm_handle`
-        // is an `Rc<RefCell<T>>`, and we want to mutate it, we use `.borrow_mut()` to
-        // convert it into an &mut T (this is when the borrow checker runs). Then we
-        // use `.by_ref()` so that we don't consume the iterator itself, just
-        // the elements it iterates over.
         for update in self.hdm_handle.borrow_mut().by_ref() {
-            // Insert those updates into the hash table, overwriting
-            // exiting (and therefore older) entries
             self.accumulated_updates
-                .insert((update.src, update.dst), update);
+                .entry((update.src, update.dst))
+                .and_modify(|v| v.push_back(update.clone()))
+                .or_insert_with(|| VecDeque::from(vec![update.clone()]));
         }
+
         // Return a copy of the most recent updates, in a Vec rather than a HashMap
-        self.accumulated_updates.values().cloned().collect()
+        let res = self
+            .accumulated_updates
+            .values()
+            .map(|v| {
+                let taken = v.iter().rev().take(50);
+                let len = taken.len() as f64;
+                let sum = taken
+                    .cloned()
+                    .reduce(|l, r| Update {
+                        elv: l.elv + r.elv,
+                        azm: l.azm + r.azm,
+                        ..l
+                    })
+                    .expect("There should be some elements here");
+
+                Update {
+                    elv: sum.elv / len,
+                    azm: sum.azm / len,
+                    ..sum
+                }
+            })
+            .collect();
+
+        for v in self.accumulated_updates.values_mut() {
+            let len = v.len();
+            if len > 100 {
+                let to_drop = len - 50;
+                v.drain(0..to_drop);
+            }
+        }
+
+        res
     }
 }
