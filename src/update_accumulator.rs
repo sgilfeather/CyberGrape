@@ -55,7 +55,7 @@ where
             .accumulated_updates
             .values()
             .map(|v| {
-                let taken = v.iter().rev().take(50);
+                let taken = v.iter().rev().take(20);
                 let len = taken.len() as f64;
                 let sum = taken
                     .cloned()

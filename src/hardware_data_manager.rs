@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 // This is just like the typedef you've seen in C. `pub` means that someone
 // who imports this module (everything in this file) will have access to those
 // type aliases.
@@ -40,4 +42,10 @@ pub trait HardwareDataManager: Iterator<Item = Update> {
     /// This is helpful when the consumer of this queue is unable to keep up
     /// with the `Update`s and wants to skip forward to the most recent items.
     fn clear(&mut self);
+}
+
+impl Display for Update {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{} => {}: azm={:.3},\telv={:.3}", self.src % 1000, self.dst % 1000, self.azm, self.elv)
+    }
 }

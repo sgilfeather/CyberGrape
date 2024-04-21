@@ -60,7 +60,11 @@ fn main() {
                         warn!("Failed to decode utf-8: {:?}", e);
                     }
                 }
-                info!("Hdm has {:#?}", accumulator.get_status());
+
+                info!("{}[2J", 27 as char);
+                for update in accumulator.get_status() {
+                    info!("{}", update);
+                }
 
                 read_buf.clear();
             }
