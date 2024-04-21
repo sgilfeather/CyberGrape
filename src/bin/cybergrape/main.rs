@@ -1,8 +1,10 @@
 //! TODO
 
-use cybergrape::hardware_message_decoder::HardwareEvent;
-use cybergrape::hdm::Hdm;
-use cybergrape::update_accumulator::UpdateAccumulator;
+use clap::Parser;
+use cybergrape::{
+    args::GrapeArgs, hardware_message_decoder::HardwareEvent, hdm::Hdm,
+    update_accumulator::UpdateAccumulator,
+};
 
 use log::{debug, info, warn};
 use serial2::SerialPort;
@@ -10,6 +12,10 @@ use std::{cell::RefCell, io, rc::Rc, str, str::FromStr};
 
 fn main() {
     env_logger::init();
+    let args = GrapeArgs::parse();
+
+    // logic to parse serial vs binaural arguments— args.whatever
+
     // Ask user for the device name
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
     println!("Available devices:");
