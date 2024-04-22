@@ -6,19 +6,19 @@ pub struct TDBufMeta {
 }
 
 impl TDBufMeta {
-    fn new(num_tags: usize) -> Self {
+    pub fn new(num_tags: usize) -> Self {
         Self {
             data: Vec::new(),
             num_tags,
         }
     }
 
-    fn add(&mut self, data: &[BufferMetadata]) {
+    pub fn add(&mut self, data: &[BufferMetadata]) {
         assert_eq!(data.len(), self.num_tags);
         self.data.push(data.to_vec());
     }
 
-    fn dump(self) -> Vec<Vec<BufferMetadata>> {
+    pub fn dump(self) -> Vec<Vec<BufferMetadata>> {
         self.data
     }
 }
