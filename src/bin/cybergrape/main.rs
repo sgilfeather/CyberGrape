@@ -8,11 +8,11 @@ use cybergrape::{
 
 use log::{debug, info, warn};
 use serial2::SerialPort;
-use std::{cell::RefCell, io, rc::Rc, str, str::FromStr};
+use std::{io, str::{self, FromStr}, sync::{Arc, Mutex}, thread::{sleep, spawn}, time::Duration};
 
 fn main() {
     env_logger::init();
-    let args = GrapeArgs::parse();
+    // let _args = GrapeArgs::parse();
 
     // logic to parse serial vs binaural arguments— args.whatever
 
@@ -34,42 +34,49 @@ fn main() {
     port.set_read_timeout(std::time::Duration::MAX)
         .expect("Failed to set read timeout");
 
-    let hdm = Rc::new(RefCell::new(Hdm::new()));
+    let hdm = Arc::new(Mutex::new(Hdm::new()));
     let mut accumulator = UpdateAccumulator::new(hdm.clone());
 
-    // Read from the port and print the received data
-    let mut buffer = [0; 256];
-    let mut read_buf = Vec::new();
 
-    loop {
-        let read_len = port.read(&mut buffer).expect("Device disconnected");
+    let _hdm_thread = spawn(move || {
+        // Read from the port and print the received data
+        let mut buffer = [0; 256];
+        let mut read_buf = Vec::new();
 
-        for &c in buffer.iter().take(read_len) {
-            read_buf.push(c);
-            if c == b'\n' {
-                match str::from_utf8(&read_buf) {
-                    Ok(s) => match HardwareEvent::from_str(s) {
-                        Ok(HardwareEvent::UUDFEvent(e)) => {
-                            debug!("Received {:#?}, adding to HDM", e);
-                            hdm.borrow_mut().add_update(e);
-                        }
-                        Ok(HardwareEvent::UUDFPEvent(ep)) => {
-                            debug!("Received {:#?}", ep);
-                        }
+        loop {
+            let read_len = port.read(&mut buffer).expect("Device disconnected");
+
+            for &c in buffer.iter().take(read_len) {
+                read_buf.push(c);
+                if c == b'\n' {
+                    match str::from_utf8(&read_buf) {
+                        Ok(s) => match HardwareEvent::from_str(s) {
+                            Ok(HardwareEvent::UUDFEvent(e)) => {
+                                debug!("Received {:#?}, adding to HDM", e);
+                                hdm.lock().unwrap().add_update(e);
+                            }
+                            Ok(HardwareEvent::UUDFPEvent(ep)) => {
+                                debug!("Received {:#?}", ep);
+                            }
+                            Err(e) => {
+                                warn!("Was unable to parse hardware message: {}", e);
+                            }
+                        },
+                        // Often happens at the beginning of transmission when
+                        // there is still garbage in the hardware buffer
                         Err(e) => {
-                            warn!("Was unable to parse hardware message: {}", e);
+                            warn!("Failed to decode utf-8: {:?}", e);
                         }
-                    },
-                    // Often happens at the beginning of transmission when
-                    // there is still garbage in the hardware buffer
-                    Err(e) => {
-                        warn!("Failed to decode utf-8: {:?}", e);
                     }
+                    read_buf.clear();
                 }
-                info!("Hdm has {:#?}", accumulator.get_status());
-
-                read_buf.clear();
             }
         }
+    });
+
+    loop {
+        info!("Update Accumulator has: {:#?}", accumulator.get_status());
+        sleep(Duration::from_millis(50));
     }
+    
 }
