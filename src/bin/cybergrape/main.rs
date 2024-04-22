@@ -10,6 +10,17 @@ use log::{debug, info, warn};
 use serial2::SerialPort;
 use std::{cell::RefCell, io, rc::Rc, str, str::FromStr};
 
+
+// Example: 
+// cargo run --bin cybergrape -- 
+//                            --samp    44100 
+//                            --update  40 binaural
+//                            -n        2 
+//                            --out     outfile.wav 
+//                            --gains   1 1
+//                            --ranges  3 4
+//                            --files   x.wav y.wav
+
 fn main() {
     env_logger::init();
     let args = GrapeArgs::parse();
