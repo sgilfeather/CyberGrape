@@ -5,8 +5,6 @@
 
 mod gui;
 
-
-
 use std::sync::{Arc, Mutex};
 
 use cybergrape::dummy_hdm::DummyHdm;

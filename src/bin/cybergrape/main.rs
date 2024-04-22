@@ -8,7 +8,13 @@ use cybergrape::{
 
 use log::{debug, info, warn};
 use serial2::SerialPort;
-use std::{io, str::{self, FromStr}, sync::{Arc, Mutex}, thread::{sleep, spawn}, time::Duration};
+use std::{
+    io,
+    str::{self, FromStr},
+    sync::{Arc, Mutex},
+    thread::{sleep, spawn},
+    time::Duration,
+};
 
 fn main() {
     env_logger::init();
@@ -36,7 +42,6 @@ fn main() {
 
     let hdm = Arc::new(Mutex::new(Hdm::new()));
     let mut accumulator = UpdateAccumulator::new(hdm.clone());
-
 
     let _hdm_thread = spawn(move || {
         // Read from the port and print the received data
@@ -78,5 +83,4 @@ fn main() {
         info!("Update Accumulator has: {:#?}", accumulator.get_status());
         sleep(Duration::from_millis(50));
     }
-    
 }

@@ -2,7 +2,8 @@
 
 use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
 use std::{
-    collections::{HashMap, VecDeque}, sync::{Arc, Mutex},
+    collections::{HashMap, VecDeque},
+    sync::{Arc, Mutex},
 };
 
 /// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
