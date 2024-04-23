@@ -5,8 +5,7 @@
 
 mod gui;
 
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, Mutex};
 
 use cybergrape::dummy_hdm::DummyHdm;
 use cybergrape::localizer::localize_points;
@@ -27,7 +26,7 @@ fn main() {
     // references to the data in several different scopes.
     //
     // This is called the **interior mutability pattern**.
-    let hdm_rf = Rc::new(RefCell::new(hdm));
+    let hdm_rf = Arc::new(Mutex::new(hdm));
 
     // Now we're going to shadow over the hdm variable with a reference so that
     // we don't accidentially do something funky with the original thing.
@@ -51,11 +50,11 @@ fn main() {
     // Remember that those closures are **not** being run immediately, they are
     // instead run roughly every quarter second by the GUI.
     let _ = engage_gui(
-        Box::new(move || debug_hdm_handle.borrow().get_debug_locations()),
+        Box::new(move || debug_hdm_handle.lock().unwrap().get_debug_locations()),
         Box::new(move || localize_points(&update_acc.get_status())),
     );
 
     // Once the gui terminates, we take a mutable referene to the hdm and stop it.
     // .borrow_mut() takes the Rc<RefCell<T>> and turns it into an &mut T.
-    hdm.borrow_mut().stop();
+    hdm.lock().unwrap().stop();
 }

@@ -2,10 +2,9 @@ use std::path::PathBuf;
 
 fn main() {
     // Get a full path to the SAF library source tree
-    let libdir_path = PathBuf::from("libsaf")
+    let saf_libdir_path = PathBuf::from("libsaf")
         .canonicalize()
         .expect("cannot canonicalize path");
-    let libdir_path_str = libdir_path.to_str().expect("Path is not a valid string");
 
     // Get a full path to the wrapper header file for SAF libs
     let header_path = PathBuf::from("libsafwrapper.h")
@@ -14,12 +13,12 @@ fn main() {
     let header_path_str = header_path.to_str().expect("Path is not a valid string");
 
     // Get full paths to the two include directories in SAF
-    let saf_header_path = libdir_path.join("framework").join("include");
+    let saf_header_path = saf_libdir_path.join("framework").join("include");
     let saf_header_path_str = saf_header_path
         .to_str()
         .expect("Path is not a valid string");
 
-    let saf_examples_header_path = libdir_path.join("examples").join("include");
+    let saf_examples_header_path = saf_libdir_path.join("examples").join("include");
     let saf_examples_header_path_str = saf_examples_header_path
         .to_str()
         .expect("Path is not a valid string");
@@ -50,7 +49,7 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=Accelerate");
 
     // Tell cargo to rebuild SAF if the library changes
-    println!("cargo:rerun-if-changed={}", libdir_path_str);
+    println!("cargo:rerun-if-changed=build.rs");
 
     // Generate Rust bindings for the header files #included in libsafwrapper.h
     let bindings = bindgen::Builder::default()
