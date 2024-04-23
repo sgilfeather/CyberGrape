@@ -1,11 +1,6 @@
 //! TODO
 
 use clap::Parser;
-use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-    ExecutableCommand,
-};
 use cybergrape::{
     args::{
         CommandTask::{Binaural, Serial},
@@ -20,10 +15,6 @@ use cybergrape::{
 
 use hound::WavReader;
 use log::{debug, info, warn};
-use ratatui::{
-    prelude::*,
-    widgets::{Block, Borders, List, ListState},
-};
 use serial2::SerialPort;
 use std::{
     cell::RefCell,
