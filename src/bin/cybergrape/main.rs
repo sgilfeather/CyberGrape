@@ -2,13 +2,17 @@
 
 use clap::Parser;
 use cybergrape::{
-    args::GrapeArgs, hardware_message_decoder::HardwareEvent, hdm::Hdm,
-    update_accumulator::UpdateAccumulator,
+    args::{CommandTask::{Binaural, Serial}, GrapeArgs}, 
+    hardware_message_decoder::HardwareEvent, 
+    hdm::Hdm,
+    saf::BinauraliserNF,
+    update_accumulator::UpdateAccumulator
 };
 
+use hound::WavReader;
 use log::{debug, info, warn};
 use serial2::SerialPort;
-use std::{cell::RefCell, io, rc::Rc, str, str::FromStr};
+use std::{cell::RefCell, collections::BinaryHeap, io, rc::Rc, str::{self, FromStr}};
 
 
 // Example: 
@@ -25,7 +29,27 @@ fn main() {
     env_logger::init();
     let args = GrapeArgs::parse();
 
-    // logic to parse serial vs binaural arguments— args.whatever
+    // logic to parse commandline arguments for serial vs binaural 
+    let SAMP_RATE: f32 = args.samp_rate;
+    let UPDATE_RATE: f32 = args.update_rate;
+
+    let cmd = args.command;
+    match cmd {
+        Binaural(BinauralCommand) => 
+        {
+            let NUM_FILES: u32 = BinauralCommand.num_files;
+            let OUTFILE: String = BinauralCommand.outfile;
+            let INFILE_SAMPLES: Vec<Vec<f32>> = hound_reader(BinauralCommand.filenames);
+            let INFILE_GAINS: Vec<f32> = BinauralCommand.gains;
+            let INFILE_RANGES: Vec<f32> = BinauralCommand.ranges;
+        },
+
+        Serial(SerialCommand) => 
+        {
+            let OUTFILE: String =  SerialCommand.outfile;
+        },
+    };
+
 
     // Ask user for the device name
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
@@ -83,4 +107,28 @@ fn main() {
             }
         }
     }
+}
+
+
+///
+/// This function, given a Vector of filenames, uses hound to read the audio
+/// data into a 2D vector, where each vector represents the audio file data.
+///
+fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
+
+    let mut all_samples: Vec<Vec<f32>> = vec![];
+    
+    for file in filenames {
+        let mut reader = WavReader::open(file).unwrap();
+
+        // collect wav file data into Vec of interleaved f32 samples
+        let samples = reader
+            .samples::<i32>()
+            .map(|x| x.unwrap() as f32)
+            .collect::<Vec<_>>();
+
+        all_samples.push(samples);
+    }
+
+    all_samples
 }
