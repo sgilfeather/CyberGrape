@@ -8,6 +8,7 @@ pub mod localizer;
 pub mod saf;
 mod saf_raw;
 pub mod spatial_data_format;
+pub mod sphericalizer;
 pub mod time_domain_buffer;
 pub mod update_accumulator;
 
