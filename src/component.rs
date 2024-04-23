@@ -23,10 +23,10 @@ pub trait Component: ToString {
     type OutData;
 
     /// Converts an input of type A into an output of type B
-    fn convert(self: &mut Self, input: Self::InData) -> Self::OutData;
+    fn convert(&mut self, input: Self::InData) -> Self::OutData;
 
     /// Cleans up at termination of pipeline
-    fn finalize(self: &mut Self) -> Result<(), ComponentError>;
+    fn finalize(&mut self) -> Result<(), ComponentError>;
 }
 
 /// Runs the given Component on its own thread. On receiving data of type
@@ -77,11 +77,11 @@ mod tests {
         type InData = i32;
         type OutData = i32;
 
-        fn convert(self: &mut Self, input: i32) -> i32 {
+        fn convert(&mut self, input: i32) -> i32 {
             input + 1
         }
 
-        fn finalize(self: &mut Self) -> Result<(), ComponentError> {
+        fn finalize(&mut self) -> Result<(), ComponentError> {
             Ok(())
         }
     }

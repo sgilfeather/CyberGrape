@@ -395,7 +395,7 @@ impl GrapeFileBuilder {
 }
 
 #[cfg(test)]
-const A_FLOAT: f32 = 12.07843112945556640625;
+const A_FLOAT: f32 = 12.078_431;
 mod tests {
     use super::*;
     use rand::distributions::{Distribution, Uniform};
@@ -407,8 +407,8 @@ mod tests {
         let path = tempfile.path();
         let data = GrapeFile::builder()
             .set_samplerate(1000)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::X)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::Y)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::X)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::Y)
             .build()
             .unwrap();
 
@@ -424,8 +424,8 @@ mod tests {
         let mut file = File::create("test.grape").unwrap();
         let data = GrapeFile::builder()
             .set_samplerate(1000)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::X)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::Y)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::X)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::Y)
             .build()
             .unwrap();
 
@@ -439,8 +439,8 @@ mod tests {
         let mut buf = Cursor::new(Vec::new());
         let data = GrapeFile::builder()
             .set_samplerate(1000)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::X)
-            .add_stream(&vec![A_FLOAT; 4], GrapeTag::Y)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::X)
+            .add_stream(&[A_FLOAT; 4], GrapeTag::Y)
             .build()
             .unwrap();
 
