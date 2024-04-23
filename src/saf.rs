@@ -1,10 +1,9 @@
 //! A safe api into the Spatial Audio Framework.
 
+use libc::c_void;
+use crate::saf_raw;
 use std::ptr::{addr_of_mut, null, null_mut};
 
-use crate::saf_raw;
-
-use libc::c_void;
 
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
 const SAMP_RATE: i32 = 44100;

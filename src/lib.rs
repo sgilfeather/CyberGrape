@@ -1,5 +1,6 @@
 pub mod args;
 pub mod component;
+pub mod device_selector;
 pub mod dummy_hdm;
 pub mod hardware_data_manager;
 pub mod hardware_message_decoder;
