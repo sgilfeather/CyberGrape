@@ -2,9 +2,8 @@
 
 use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
 use std::{
-    cell::RefCell,
     collections::{HashMap, VecDeque},
-    rc::Rc,
+    sync::{Arc, Mutex},
 };
 
 /// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
@@ -18,7 +17,7 @@ where
     // `Rc` means this is a "reference-counted" smart pointer, and `RefCell` means we
     // are going to enforce the borrow checking rules at runtime instead of
     // compile time. This way we can keep references to the HDM in several scopes.
-    hdm_handle: Rc<RefCell<Hdm>>,
+    hdm_handle: Arc<Mutex<Hdm>>,
 
     // A HashMap mapping `(Id, Id)` pairs to `Update`s.
     accumulated_updates: HashMap<(Id, Id), VecDeque<Update>>,
@@ -33,7 +32,7 @@ where
     Hdm: HardwareDataManager,
 {
     /// Instantiates a new `UpdateAccumulator` attached to a `Hdm`
-    pub fn new(hdm_handle: Rc<RefCell<Hdm>>) -> Self {
+    pub fn new(hdm_handle: Arc<Mutex<Hdm>>) -> Self {
         Self {
             hdm_handle,
             accumulated_updates: HashMap::new(),
@@ -43,7 +42,7 @@ where
     /// Returns a `Vec` contatining the most recent `Update`s for all pairs
     /// of blocks. Essentially, the most updated data available.
     pub fn get_status(&mut self) -> Vec<Update> {
-        for update in self.hdm_handle.borrow_mut().by_ref() {
+        for update in self.hdm_handle.lock().unwrap().by_ref() {
             self.accumulated_updates
                 .entry((update.src, update.dst))
                 .and_modify(|v| v.push_back(update.clone()))
