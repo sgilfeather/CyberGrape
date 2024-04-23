@@ -14,14 +14,9 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - name: checkout codebase
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
           submodules: "true"
-    - name: fetch history
-      run: git fetch
-    - name: restore timestamps
-      uses: chetan/git-restore-mtime-action@v2
     - name: Create Lockfile
       run: cargo tree --verbose
     - uses: actions/cache@v3
