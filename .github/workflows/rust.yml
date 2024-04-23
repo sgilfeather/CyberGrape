@@ -16,18 +16,21 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
+          fetch-depth: 0
           submodules: "true"
-    - name: Create Lockfile
-      run: cargo tree --verbose
-    - uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cargo/bin/
-          ~/.cargo/registry/index/
-          ~/.cargo/registry/cache/
-          ~/.cargo/git/db/
-          target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+    - name: restore timestamps
+      uses: chetan/git-restore-mtime-action@v2
+    # - name: Create Lockfile
+    #   run: cargo tree --verbose
+    # - uses: actions/cache@v3
+    #   with:
+    #     path: |
+    #       ~/.cargo/bin/
+    #       ~/.cargo/registry/index/
+    #       ~/.cargo/registry/cache/
+    #       ~/.cargo/git/db/
+    #       target/
+    #     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
     - name: Build
       run: cargo build --verbose
     - name: Run tests
