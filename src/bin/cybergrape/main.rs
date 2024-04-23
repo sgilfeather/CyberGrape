@@ -11,6 +11,7 @@ use cybergrape::{
         CommandTask::{Binaural, Serial},
         GrapeArgs,
     },
+    device_selector,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
     saf::BinauraliserNF,
@@ -42,7 +43,7 @@ use std::{
 //                            --ranges  3 4
 //                            --files   x.wav y.wav
 
-fn main() {
+fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
     let args = GrapeArgs::parse();
 
@@ -66,81 +67,15 @@ fn main() {
     };
 
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
-
-    enable_raw_mode().unwrap();
-    stdout().execute(EnterAlternateScreen).unwrap();
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout())).unwrap();
-    terminal.clear().unwrap();
-
-    let mut selected_item = 0;
-    let mut selected_port = None;
-
-    loop {
-        terminal
-            .draw(|frame| {
-                let port_names = available_ports.iter().map(|p| p.to_string_lossy());
-                let list = List::new(port_names)
-                    .block(
-                        Block::default()
-                            .title("Select Your Device")
-                            .borders(Borders::ALL),
-                    )
-                    .style(Style::default().fg(Color::White))
-                    .highlight_symbol(">>");
-
-                let area = frame.size();
-                let mut state = ListState::default().with_selected(Some(selected_item));
-                frame.render_stateful_widget(list, area, &mut state);
-            })
-            .unwrap();
-        if event::poll(std::time::Duration::from_millis(16)).unwrap() {
-            if let event::Event::Key(key) = event::read().unwrap() {
-                if key.kind == KeyEventKind::Press {
-                    match key.code {
-                        KeyCode::Down => {
-                            selected_item = (selected_item + 1) % available_ports.len();
-                        }
-                        KeyCode::Up => {
-                            selected_item =
-                                (selected_item + available_ports.len() - 1) % available_ports.len();
-                        }
-                        KeyCode::Enter => {
-                            selected_port = Some(selected_item);
-                            break;
-                        }
-                        KeyCode::Char('q') => break,
-                        _ => {}
-                    }
-                }
-            }
-        }
-    }
-
-    stdout().execute(LeaveAlternateScreen).unwrap();
-    disable_raw_mode().unwrap();
-    terminal.show_cursor().unwrap();
-
-    if selected_port.is_none() {
-        return;
-    }
-
-    let device_name = available_ports[selected_port.unwrap()].to_string_lossy();
-    println!("Selected device: {}", device_name);
-
-    // Ask user for the device name
-    // println!("Available devices:");
-    // for port in available_ports {
-    //     println!("\t{}", port.to_string_lossy());
-    // }
-    // println!("Enter the device name: ");
-    // let mut device_name = String::new();
-    // io::stdin()
-    //     .read_line(&mut device_name)
-    //     .expect("Failed to read line");
+    let selected_port_opt = device_selector::run_device_selector(available_ports)?;
+    let selected_port = match selected_port_opt {
+        Some(port) => port,
+        None => return Ok(()),
+    };
 
     // Try to open the requested port and set its read timeout to infinity
     // (well, about 584,942,417,355 years, which is close enough)
-    let mut port = SerialPort::open(device_name.trim(), 115200).expect("Failed to open port");
+    let mut port = SerialPort::open(selected_port, 115200).expect("Failed to open port");
     port.set_read_timeout(std::time::Duration::MAX)
         .expect("Failed to set read timeout");
 
@@ -160,7 +95,7 @@ fn main() {
                 match str::from_utf8(&read_buf) {
                     Ok(s) => match HardwareEvent::from_str(s) {
                         Ok(HardwareEvent::UUDFEvent(e)) => {
-                            debug!("Received {:#?}, adding to HDM", e);
+                            println!("Received {:#?}, adding to HDM", e);
                             hdm.borrow_mut().add_update(e);
                         }
                         Ok(HardwareEvent::UUDFPEvent(ep)) => {
@@ -182,6 +117,7 @@ fn main() {
             }
         }
     }
+    Ok(())
 }
 
 ///
