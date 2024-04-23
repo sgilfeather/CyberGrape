@@ -2,7 +2,7 @@
 
 use clap::{Args, Parser, Subcommand};
 
-#[derive(Debug, Parser)]
+#[derive(Debug, Parser, Clone)]
 #[clap(version, about)]
 pub struct GrapeArgs {
     #[command(subcommand, long_about)]
@@ -15,10 +15,10 @@ pub struct GrapeArgs {
 
     /// How often the location of the audio blocks are sampled, in updates per second
     #[arg(short = 'u', long = "update")]
-    pub update_rate: f32
+    pub update_rate: f32,
 }
 
-#[derive(Debug, Subcommand)]
+#[derive(Debug, Subcommand, Clone)]
 pub enum CommandTask {
     /// Encode positional data to a file in the GrapeFile format
     #[command(about)]
@@ -26,10 +26,10 @@ pub enum CommandTask {
 
     /// Combine N audio samples into a binauralized WAV file
     #[command(about)]
-    Binaural(BinauralCommand)
+    Binaural(BinauralCommand),
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 #[command(version, about)]
 pub struct SerialCommand {
     /// Filename for serialization output to be written to
@@ -42,10 +42,10 @@ pub struct SerialCommand {
 
     /// Range of the audio file
     #[arg(short = 'r', long = "range")]
-    pub range: f32
+    pub range: f32,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone)]
 #[command(version, about)]
 pub struct BinauralCommand {
     /// Number of input files to be assigned to audio blocks
@@ -65,9 +65,9 @@ pub struct BinauralCommand {
     #[arg(short = 'g', long = "gains")]
     #[clap(num_args = 1..)]
     pub gains: Vec<f32>,
-    
+
     /// List of ranges fields, which should correspond to the input files given
     #[arg(short = 'r', long = "ranges")]
     #[clap(num_args = 1..)]
-    pub ranges: Vec<f32>
+    pub ranges: Vec<f32>,
 }

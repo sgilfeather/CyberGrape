@@ -1,9 +1,8 @@
 //! A safe api into the Spatial Audio Framework.
 
-use libc::c_void;
 use crate::saf_raw;
+use libc::c_void;
 use std::ptr::{addr_of_mut, null, null_mut};
-
 
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
 const SAMP_RATE: i32 = 44100;
@@ -55,7 +54,7 @@ pub trait Binauraliser {
 
 /// The metadata associated with an audio stream. Includes the buffer's angular
 /// position, range, and gain.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub struct BufferMetadata {
     pub azimuth: f32,
     pub elevation: f32,

@@ -1,5 +1,6 @@
 use crate::saf::BufferMetadata;
 
+#[derive(Debug, Clone)]
 pub struct TDBufMeta {
     data: Vec<Vec<BufferMetadata>>,
     num_tags: usize,

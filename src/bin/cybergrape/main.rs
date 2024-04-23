@@ -7,20 +7,22 @@ use cybergrape::{
         GrapeArgs,
     },
     device_selector,
+    hardware_data_manager::Update,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
-    saf::BinauraliserNF,
+    saf::BufferMetadata,
+    time_domain_buffer::TDBufMeta,
     update_accumulator::UpdateAccumulator,
 };
 
 use hound::WavReader;
 use log::{debug, info, warn};
 use serial2::SerialPort;
+use spin_sleep::sleep;
 use std::{
-    io,
     str::{self, FromStr},
     sync::{Arc, Mutex},
-    thread::{sleep, spawn},
+    thread::spawn,
     time::Duration,
 };
 
@@ -39,21 +41,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = GrapeArgs::parse();
 
     // logic to parse commandline arguments for serial vs binaural
-    let SAMP_RATE: f32 = args.samp_rate;
-    let UPDATE_RATE: f32 = args.update_rate;
+    let update_rate: f32 = args.update_rate;
 
     let cmd = args.command;
+
+    let num_files;
+    let _outfile;
+    let _infile_samples;
+    let _infile_gains;
+    let _infile_ranges;
+
     match cmd {
-        Binaural(BinauralCommand) => {
-            let NUM_FILES: u32 = BinauralCommand.num_files;
-            let OUTFILE: String = BinauralCommand.outfile;
-            let INFILE_SAMPLES: Vec<Vec<f32>> = hound_reader(BinauralCommand.filenames);
-            let INFILE_GAINS: Vec<f32> = BinauralCommand.gains;
-            let INFILE_RANGES: Vec<f32> = BinauralCommand.ranges;
+        Binaural(binaural_command) => {
+            num_files = Some(binaural_command.num_files);
+            _outfile = Some(binaural_command.outfile);
+            _infile_samples = Some(hound_reader(binaural_command.filenames));
+            _infile_gains = Some(binaural_command.gains);
+            _infile_ranges = Some(binaural_command.ranges);
         }
 
-        Serial(SerialCommand) => {
-            let OUTFILE: String = SerialCommand.outfile;
+        Serial(serial_command) => {
+            num_files = Some(2);
+            _outfile = Some(serial_command.outfile);
         }
     };
 
@@ -109,11 +118,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    loop {
-        info!("Update Accumulator has: {:#?}", accumulator.get_status());
-        sleep(Duration::from_millis(50));
+    let mut td_buf = TDBufMeta::new(num_files.expect("should come from args") as usize);
+    let time_delta = Duration::from_secs(1).div_f32(update_rate);
+
+    for _ in 0..10000 {
+        td_buf.add(&update_to_metadata(&accumulator.get_status()));
+        sleep(time_delta);
     }
+
+    info!("{:#?}", td_buf);
+
     Ok(())
+}
+
+fn update_to_metadata(_updates: &[Update]) -> Vec<BufferMetadata> {
+    todo!()
 }
 
 ///
