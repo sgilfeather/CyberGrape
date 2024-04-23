@@ -33,7 +33,7 @@ use std::{
 
 fn main() {
     env_logger::init();
-    // let _args = GrapeArgs::parse();
+    let args = GrapeArgs::parse();
 
     // logic to parse commandline arguments for serial vs binaural 
     let SAMP_RATE: f32 = args.samp_rate;
