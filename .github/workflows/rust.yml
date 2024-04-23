@@ -16,10 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v4
       with:
-          fetch-depth: 0
           submodules: "true"
-    - name: restore timestamps
-      uses: chetan/git-restore-mtime-action@v2
     - name: Create Lockfile
       run: cargo tree --verbose
     - uses: actions/cache@v3
