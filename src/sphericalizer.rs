@@ -14,19 +14,16 @@ use crate::update_accumulator::UpdateAccumulator;
 const BACK_ANTENNA: usize = 118875763481542;
 const FRONT_ANTENNA: usize = 118875763481510;
 
+// A tuple of the gain and range of the tags
+type TagSetting = (f32, f32);
+
 pub struct Sphericalizer {
-    num_tags: usize,
-    gain: f32,
-    range: f32,
+    tag_settings: Vec<TagSetting>,
 }
 
 impl Sphericalizer {
-    pub fn new(num_tags: usize, gain: f32, range: f32) -> Self {
-        Self {
-            num_tags,
-            gain,
-            range,
-        }
+    pub fn new(tag_settings: Vec<TagSetting>) -> Self {
+        Self { tag_settings }
     }
 
     // From observation, azimuth and elevation are in the range of -70 to 70 degrees
@@ -40,7 +37,7 @@ impl Sphericalizer {
         let mut updates = acc.get_status();
         // There should be two updates for each tag since there are two antennas
         // If there are not, then we must wait until more updates come in
-        if updates.len() * 2 != self.num_tags {
+        if updates.len() * 2 != self.tag_settings.len() {
             return None;
         }
         // Sort by tag ID
@@ -49,7 +46,8 @@ impl Sphericalizer {
         let grouped_updates = updates.chunks(2);
         // For each pair, derive a single BufferMetadata
         grouped_updates
-            .map(|pair| {
+            .enumerate()
+            .map(|(i, pair)| {
                 let back_ant = pair
                     .iter()
                     .find(|u| u.src == BACK_ANTENNA)
@@ -58,11 +56,12 @@ impl Sphericalizer {
                     .iter()
                     .find(|u| u.src == FRONT_ANTENNA)
                     .expect("Missing an update from the front antenna");
+                let (gain, range) = self.tag_settings[i];
                 let mut metadata = BufferMetadata {
                     azimuth: Sphericalizer::scale_angle(back_ant.azm) as f32,
                     elevation: Sphericalizer::scale_angle(back_ant.elv) as f32,
-                    range: self.range,
-                    gain: self.gain,
+                    range: range,
+                    gain: gain,
                 };
                 // The front antenna informs whether the tag is in front or behind the base antenna, since the base itself cannot tell
                 if front_ant.azm < 0.0 {
