@@ -18,8 +18,7 @@ jobs:
       uses: actions/checkout@v4
       with:
           fetch-depth: 0
-    - name: checkout saf
-      run: git submodule update --init
+          submodules: recursive
     - name: restore timestamps
       uses: chetan/git-restore-mtime-action@v2
     - name: Create Lockfile
