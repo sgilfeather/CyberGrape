@@ -17,10 +17,7 @@ use hound::WavReader;
 use log::{debug, info, warn};
 use serial2::SerialPort;
 use std::{
-    cell::RefCell,
-    collections::BinaryHeap,
-    io::{self, stdout},
-    rc::Rc,
+    io,
     str::{self, FromStr},
     sync::{Arc, Mutex},
     thread::{sleep, spawn},
@@ -90,7 +87,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                     match str::from_utf8(&read_buf) {
                         Ok(s) => match HardwareEvent::from_str(s) {
                             Ok(HardwareEvent::UUDFEvent(e)) => {
-                                println!("Received {:#?}, adding to HDM", e);
+                                debug!("Received {:#?}, adding to HDM", e);
                                 hdm.lock().unwrap().add_update(e);
                             }
                             Ok(HardwareEvent::UUDFPEvent(ep)) => {
