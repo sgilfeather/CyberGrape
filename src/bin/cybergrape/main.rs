@@ -9,6 +9,7 @@ use cybergrape::{
     device_selector,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
+    sphericalizer::Sphericalizer,
     time_domain_buffer::TDBufMeta,
     update_accumulator::UpdateAccumulator,
 };
@@ -121,19 +122,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut td_buf = TDBufMeta::new(num_files.expect("should come from args") as usize);
     let time_delta = Duration::from_secs(1).div_f32(update_rate);
+    let sphericalizer =
+        Sphericalizer::new(zip(infile_gains.unwrap(), infile_ranges.unwrap()).collect());
 
     for _ in 0..10000 {
-        td_buf.add(&update_to_metadata(&accumulator.get_status()));
+        if let Some(update) = sphericalizer.query(&mut accumulator) {
+            td_buf.add(update)
+        }
         sleep(time_delta);
     }
 
     info!("{:#?}", td_buf.dump());
 
     Ok(())
-}
-
-fn update_to_metadata(_updates: &[Update]) -> Vec<BufferMetadata> {
-    todo!()
 }
 
 ///

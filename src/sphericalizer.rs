@@ -1,3 +1,5 @@
+use std::f64::consts::PI;
+
 use crate::hdm::Hdm;
 use crate::saf::BufferMetadata;
 use crate::update_accumulator::UpdateAccumulator;
@@ -26,18 +28,19 @@ impl Sphericalizer {
         Self { tag_settings }
     }
 
-    // From observation, azimuth and elevation are in the range of -70 to 70 degrees
-    // This function scales them to the range -90 to 90 degrees
+    // From observation, azimuth and elevation are in the range of -70 to 70 degrees (-1.22173 to 1.22173 rad)
+    // This function scales them to the range -90 to 90 degrees (-PI/2 to PI/2 rad)
     fn scale_angle(azm: f64) -> f64 {
-        let scaled = azm * 90.0 / 70.0;
-        scaled.clamp(-90.0, 90.0)
+        let pi_2 = PI / 2.0;
+        let scaled = azm * pi_2 / 1.22173;
+        scaled.clamp(-pi_2, pi_2)
     }
 
     pub fn query(&self, acc: &mut UpdateAccumulator<Hdm>) -> Option<Vec<BufferMetadata>> {
         let mut updates = acc.get_status();
         // There should be two updates for each tag since there are two antennas
         // If there are not, then we must wait until more updates come in
-        if updates.len() * 2 != self.tag_settings.len() {
+        if updates.len() != self.tag_settings.len() * 2 {
             return None;
         }
         // Sort by tag ID
@@ -60,12 +63,12 @@ impl Sphericalizer {
                 let mut metadata = BufferMetadata {
                     azimuth: Sphericalizer::scale_angle(back_ant.azm) as f32,
                     elevation: Sphericalizer::scale_angle(back_ant.elv) as f32,
-                    range: range,
-                    gain: gain,
+                    range,
+                    gain,
                 };
                 // The front antenna informs whether the tag is in front or behind the base antenna, since the base itself cannot tell
                 if front_ant.azm < 0.0 {
-                    metadata.azimuth = 180.0 - metadata.azimuth;
+                    metadata.azimuth = PI as f32 - metadata.azimuth;
                 };
                 metadata
             })
