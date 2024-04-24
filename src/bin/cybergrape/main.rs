@@ -7,10 +7,8 @@ use cybergrape::{
         GrapeArgs,
     },
     device_selector,
-    hardware_data_manager::Update,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
-    saf::BufferMetadata,
     time_domain_buffer::TDBufMeta,
     update_accumulator::UpdateAccumulator,
 };
@@ -20,6 +18,7 @@ use log::{debug, info, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{
+    iter::zip,
     str::{self, FromStr},
     sync::{Arc, Mutex},
     thread::spawn,
@@ -48,21 +47,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let num_files;
     let _outfile;
     let _infile_samples;
-    let _infile_gains;
-    let _infile_ranges;
+    let infile_gains;
+    let infile_ranges;
 
     match cmd {
         Binaural(binaural_command) => {
             num_files = Some(binaural_command.num_files);
             _outfile = Some(binaural_command.outfile);
             _infile_samples = Some(hound_reader(binaural_command.filenames));
-            _infile_gains = Some(binaural_command.gains);
-            _infile_ranges = Some(binaural_command.ranges);
+            infile_gains = Some(binaural_command.gains);
+            infile_ranges = Some(binaural_command.ranges);
         }
 
         Serial(serial_command) => {
             num_files = Some(2);
             _outfile = Some(serial_command.outfile);
+            infile_gains = Some(vec![1.0, 1.0]);
+            infile_ranges = Some(vec![1.0, 1.0]);
         }
     };
 
@@ -126,7 +127,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         sleep(time_delta);
     }
 
-    info!("{:#?}", td_buf);
+    info!("{:#?}", td_buf.dump());
 
     Ok(())
 }
