@@ -36,13 +36,9 @@ pub struct SerialCommand {
     #[arg(short = 'o', long = "out")]
     pub outfile: String,
 
-    /// Sample rate of the audio file, in gHz
-    #[arg(short = 'g', long = "gain")]
-    pub gain: f32,
-
-    /// Range of the audio file
-    #[arg(short = 'r', long = "range")]
-    pub range: f32,
+    /// Number of tags to record spatial data from
+    #[arg(short)]
+    pub num_tags: u32,
 }
 
 #[derive(Debug, Args, Clone)]

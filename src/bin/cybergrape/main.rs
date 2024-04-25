@@ -19,7 +19,6 @@ use log::{debug, info, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{
-    iter::zip,
     str::{self, FromStr},
     sync::{Arc, Mutex},
     thread::spawn,
@@ -45,27 +44,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cmd = args.command;
 
-    let num_files;
-    let _outfile;
-    let _infile_samples;
-    let infile_gains;
-    let infile_ranges;
-
-    match cmd {
-        Binaural(binaural_command) => {
-            num_files = Some(binaural_command.num_files);
-            _outfile = Some(binaural_command.outfile);
-            _infile_samples = Some(hound_reader(binaural_command.filenames));
-            infile_gains = Some(binaural_command.gains);
-            infile_ranges = Some(binaural_command.ranges);
-        }
-
-        Serial(serial_command) => {
-            num_files = Some(2);
-            _outfile = Some(serial_command.outfile);
-            infile_gains = Some(vec![1.0, 1.0]);
-            infile_ranges = Some(vec![1.0, 1.0]);
-        }
+    let (num_tags, outfile, audio_settings) = match cmd {
+        Binaural(binaural_command) => (
+            binaural_command.num_files,
+            binaural_command.outfile,
+            Some((
+                hound_reader(binaural_command.filenames),
+                binaural_command.gains,
+                binaural_command.ranges,
+            )),
+        ),
+        Serial(serial_command) => (
+            serial_command.num_tags,
+            // outfile is common to both commands, though it means slightly different things
+            serial_command.outfile,
+            // the serial command doesn't have any audio samples and doesn't need gain/range info
+            None,
+        ),
     };
 
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
@@ -120,10 +115,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    let mut td_buf = TDBufMeta::new(num_files.expect("should come from args") as usize);
+    let mut td_buf = TDBufMeta::new(num_tags as usize);
     let time_delta = Duration::from_secs(1).div_f32(update_rate);
-    let sphericalizer =
-        Sphericalizer::new(zip(infile_gains.unwrap(), infile_ranges.unwrap()).collect());
+
+    let (_filenames, gains, ranges) = audio_settings.expect("Assume we are binauralizing for now");
+
+    let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges.into_iter()).collect());
 
     for _ in 0..10000 {
         if let Some(update) = sphericalizer.query(&mut accumulator) {
