@@ -44,7 +44,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let cmd = args.command;
 
-    let (num_tags, outfile, audio_settings) = match cmd {
+    let (num_tags, _outfile, audio_settings) = match cmd {
         Binaural(binaural_command) => (
             binaural_command.num_files,
             binaural_command.outfile,
@@ -120,7 +120,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (_filenames, gains, ranges) = audio_settings.expect("Assume we are binauralizing for now");
 
-    let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges.into_iter()).collect());
+    let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
 
     for _ in 0..10000 {
         if let Some(update) = sphericalizer.query(&mut accumulator) {
