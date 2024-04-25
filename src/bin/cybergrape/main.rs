@@ -9,6 +9,7 @@ use cybergrape::{
     device_selector,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
+    hound_helpers::hound_reader,
     sphericalizer::Sphericalizer,
     time_domain_buffer::TDBufMeta,
     update_accumulator::UpdateAccumulator,
