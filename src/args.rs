@@ -9,8 +9,8 @@ pub struct GrapeArgs {
     /// Which task to perform, serialization or binauralization
     pub command: CommandTask,
 
-    /// Sample rate of the audio files, in gHz. Will often be 44100
-    #[arg(short = 's', long = "samp")]
+    /// Sample rate of the audio files, in gHz. Defaults to 44100
+    #[arg(short = 's', long = "samp", default_value_t = 44100.0)]
     pub samp_rate: f32,
 
     /// How often the location of the audio blocks are sampled, in updates per second
