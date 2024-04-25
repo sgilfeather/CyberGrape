@@ -67,7 +67,7 @@ impl Sphericalizer {
                     gain: gain,
                 };
                 // The front antenna informs whether the tag is in front or behind the base antenna, since the base itself cannot tell
-                if front_ant.azm < 0.0 {
+                if front_ant.azm > 0.0 {
                     metadata.azimuth = PI as f32 - metadata.azimuth;
                 };
                 metadata
