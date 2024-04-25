@@ -15,7 +15,7 @@ use cybergrape::{
     update_accumulator::UpdateAccumulator,
 };
 
-use hound::WavReader;
+
 use log::{debug, info, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;

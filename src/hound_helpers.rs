@@ -30,7 +30,7 @@ impl Component for HoundWriter {
     type OutData = Result<(), HoundError>;
 
     /// Appends binauralized audio data to the specified output WAV file
-    fn convert(self: &mut Self, input: (Vec<f32>, Vec<f32>)) -> Result<(), HoundError> {
+    fn convert(&mut self, input: (Vec<f32>, Vec<f32>)) -> Result<(), HoundError> {
         let (left_samps, right_samps) = input;
         let mut writer = self.writer.take().unwrap();
 
@@ -43,13 +43,13 @@ impl Component for HoundWriter {
         // flush after each write to save state of the WAV file in the header
         let result = writer.flush();
         self.writer = Some(writer);
-        return result;
+        result
     }
 
     /// Clean up WavWriter after writing all audio data from pipeline. This
     /// This happens automatically when the WavWriter is dropped, but
     /// calling this gives us controlled error checking.
-    fn finalize(self: &mut Self) -> Result<(), ComponentError> {
+    fn finalize(&mut self) -> Result<(), ComponentError> {
         let writer = self.writer.take().unwrap();
 
         writer.finalize().map_err(ComponentError::HoundError)
