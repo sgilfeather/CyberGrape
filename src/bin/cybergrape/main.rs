@@ -133,25 +133,3 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
-///
-/// This function, given a Vector of filenames, uses hound to read the audio
-/// data into a 2D vector, where each vector represents the audio file data.
-///
-fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
-    let mut all_samples: Vec<Vec<f32>> = vec![];
-
-    for file in filenames {
-        let mut reader = WavReader::open(file).unwrap();
-
-        // collect wav file data into Vec of interleaved f32 samples
-        let samples = reader
-            .samples::<i32>()
-            .map(|x| x.unwrap() as f32)
-            .collect::<Vec<_>>();
-
-        all_samples.push(samples);
-    }
-
-    all_samples
-}

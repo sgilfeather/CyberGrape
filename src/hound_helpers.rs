@@ -2,7 +2,7 @@
 //! the user-speciifed output file.
 
 use crate::component::{Component, ComponentError};
-use hound::{Error as HoundError, WavSpec, WavWriter};
+use hound::{Error as HoundError, WavReader, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -63,12 +63,34 @@ impl ToString for HoundWriter {
     }
 }
 
+///
+/// This function, given a Vector of filenames, uses hound to read the audio
+/// data into a 2D vector, where each vector represents the audio file data.
+///
+fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
+    let mut all_samples: Vec<Vec<f32>> = vec![];
+
+    for file in filenames {
+        let mut reader = WavReader::open(file).unwrap();
+
+        // collect wav file data into Vec of interleaved f32 samples
+        let samples = reader
+            .samples::<i32>()
+            .map(|x| x.unwrap() as f32)
+            .collect::<Vec<_>>();
+
+        all_samples.push(samples);
+    }
+
+    all_samples
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use crate::component::run_component;
     use hound::{SampleFormat, WavReader};
+    use tempfile::NamedTempFile;
 
     use std::f32::consts::PI;
     use std::fs::remove_file;
