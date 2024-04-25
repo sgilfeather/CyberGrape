@@ -9,18 +9,20 @@ use cybergrape::{
     device_selector,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
-    saf::BinauraliserNF,
+    hound_helpers::hound_reader,
+    sphericalizer::Sphericalizer,
+    time_domain_buffer::TDBufMeta,
     update_accumulator::UpdateAccumulator,
 };
 
-use hound::WavReader;
+
 use log::{debug, info, warn};
 use serial2::SerialPort;
+use spin_sleep::sleep;
 use std::{
-    io,
     str::{self, FromStr},
     sync::{Arc, Mutex},
-    thread::{sleep, spawn},
+    thread::spawn,
     time::Duration,
 };
 
@@ -39,22 +41,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = GrapeArgs::parse();
 
     // logic to parse commandline arguments for serial vs binaural
-    let SAMP_RATE: f32 = args.samp_rate;
-    let UPDATE_RATE: f32 = args.update_rate;
+    let update_rate: f32 = args.update_rate;
 
     let cmd = args.command;
-    match cmd {
-        Binaural(BinauralCommand) => {
-            let NUM_FILES: u32 = BinauralCommand.num_files;
-            let OUTFILE: String = BinauralCommand.outfile;
-            let INFILE_SAMPLES: Vec<Vec<f32>> = hound_reader(BinauralCommand.filenames);
-            let INFILE_GAINS: Vec<f32> = BinauralCommand.gains;
-            let INFILE_RANGES: Vec<f32> = BinauralCommand.ranges;
-        }
 
-        Serial(SerialCommand) => {
-            let OUTFILE: String = SerialCommand.outfile;
-        }
+    let (num_tags, _outfile, audio_settings) = match cmd {
+        Binaural(binaural_command) => (
+            binaural_command.num_files,
+            binaural_command.outfile,
+            Some((
+                hound_reader(binaural_command.filenames),
+                binaural_command.gains,
+                binaural_command.ranges,
+            )),
+        ),
+        Serial(serial_command) => (
+            serial_command.num_tags,
+            // outfile is common to both commands, though it means slightly different things
+            serial_command.outfile,
+            // the serial command doesn't have any audio samples and doesn't need gain/range info
+            None,
+        ),
     };
 
     let available_ports = SerialPort::available_ports().expect("Failed to get available ports");
@@ -109,31 +116,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    loop {
-        info!("Update Accumulator has: {:#?}", accumulator.get_status());
-        sleep(Duration::from_millis(50));
+    let mut td_buf = TDBufMeta::new(num_tags as usize);
+    let time_delta = Duration::from_secs(1).div_f32(update_rate);
+
+    let (_filenames, gains, ranges) = audio_settings.expect("Assume we are binauralizing for now");
+
+    let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
+
+    for _ in 0..10000 {
+        if let Some(update) = sphericalizer.query(&mut accumulator) {
+            td_buf.add(update)
+        }
+        sleep(time_delta);
     }
+
+    info!("{:#?}", td_buf.dump());
+
     Ok(())
-}
-
-///
-/// This function, given a Vector of filenames, uses hound to read the audio
-/// data into a 2D vector, where each vector represents the audio file data.
-///
-fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
-    let mut all_samples: Vec<Vec<f32>> = vec![];
-
-    for file in filenames {
-        let mut reader = WavReader::open(file).unwrap();
-
-        // collect wav file data into Vec of interleaved f32 samples
-        let samples = reader
-            .samples::<i32>()
-            .map(|x| x.unwrap() as f32)
-            .collect::<Vec<_>>();
-
-        all_samples.push(samples);
-    }
-
-    all_samples
 }

@@ -2,7 +2,7 @@
 //! the user-speciifed output file.
 
 use crate::component::{Component, ComponentError};
-use hound::{Error as HoundError, WavSpec, WavWriter};
+use hound::{Error as HoundError, WavReader, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -30,7 +30,7 @@ impl Component for HoundWriter {
     type OutData = Result<(), HoundError>;
 
     /// Appends binauralized audio data to the specified output WAV file
-    fn convert(self: &mut Self, input: (Vec<f32>, Vec<f32>)) -> Result<(), HoundError> {
+    fn convert(&mut self, input: (Vec<f32>, Vec<f32>)) -> Result<(), HoundError> {
         let (left_samps, right_samps) = input;
         let mut writer = self.writer.take().unwrap();
 
@@ -43,13 +43,13 @@ impl Component for HoundWriter {
         // flush after each write to save state of the WAV file in the header
         let result = writer.flush();
         self.writer = Some(writer);
-        return result;
+        result
     }
 
     /// Clean up WavWriter after writing all audio data from pipeline. This
     /// This happens automatically when the WavWriter is dropped, but
     /// calling this gives us controlled error checking.
-    fn finalize(self: &mut Self) -> Result<(), ComponentError> {
+    fn finalize(&mut self) -> Result<(), ComponentError> {
         let writer = self.writer.take().unwrap();
 
         writer.finalize().map_err(ComponentError::HoundError)
@@ -63,12 +63,34 @@ impl ToString for HoundWriter {
     }
 }
 
+///
+/// This function, given a Vector of filenames, uses hound to read the audio
+/// data into a 2D vector, where each vector represents the audio file data.
+///
+pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
+    let mut all_samples: Vec<Vec<f32>> = vec![];
+
+    for file in filenames {
+        let mut reader = WavReader::open(file).unwrap();
+
+        // collect wav file data into Vec of interleaved f32 samples
+        let samples = reader
+            .samples::<i32>()
+            .map(|x| x.unwrap() as f32)
+            .collect::<Vec<_>>();
+
+        all_samples.push(samples);
+    }
+
+    all_samples
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tempfile::NamedTempFile;
     use crate::component::run_component;
     use hound::{SampleFormat, WavReader};
+    use tempfile::NamedTempFile;
 
     use std::f32::consts::PI;
     use std::fs::remove_file;

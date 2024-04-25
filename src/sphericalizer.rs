@@ -63,8 +63,8 @@ impl Sphericalizer {
                 let mut metadata = BufferMetadata {
                     azimuth: Sphericalizer::scale_angle(back_ant.azm) as f32,
                     elevation: Sphericalizer::scale_angle(back_ant.elv) as f32,
-                    range: range,
-                    gain: gain,
+                    range,
+                    gain,
                 };
                 // The front antenna informs whether the tag is in front or behind the base antenna, since the base itself cannot tell
                 if front_ant.azm > 0.0 {

@@ -1,5 +1,6 @@
 use crate::saf::BufferMetadata;
 
+#[derive(Debug, Clone)]
 pub struct TDBufMeta {
     data: Vec<Vec<BufferMetadata>>,
     num_tags: usize,
@@ -13,9 +14,9 @@ impl TDBufMeta {
         }
     }
 
-    pub fn add(&mut self, data: &[BufferMetadata]) {
+    pub fn add(&mut self, data: Vec<BufferMetadata>) {
         assert_eq!(data.len(), self.num_tags);
-        self.data.push(data.to_vec());
+        self.data.push(data);
     }
 
     pub fn dump(self) -> Vec<Vec<BufferMetadata>> {
@@ -46,7 +47,7 @@ mod tests {
             },
         ];
         let mut buf = TDBufMeta::new(2);
-        buf.add(&update);
+        buf.add(update.to_vec());
         let data = buf.dump();
         assert_eq!(data.len(), 1);
         assert_eq!(data[0].len(), 2);
