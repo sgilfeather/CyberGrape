@@ -47,7 +47,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let (num_tags, outfile, audio_settings) = match cmd {
         Binaural(binaural_command) => (
-            binaural_command.num_files as usize,
+            binaural_command.num_files,
             binaural_command.outfile,
             Some((
                 hound_reader(binaural_command.filenames),
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             )),
         ),
         Serial(serial_command) => (
-            serial_command.num_tags as usize,
+            serial_command.num_tags,
             // outfile is common to both commands, though it means slightly different things
             serial_command.outfile,
             // the serial command doesn't have any audio samples and doesn't need gain/range info
@@ -91,9 +91,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         
         
         let shortest = sound_data.iter().map(|v| v.len()).max().expect("should have some files");
-        let len_shortest = shortest / sample_rate as usize;
+        let len_shortest = shortest / sample_rate;
         
-        let num_updates_needed = len_shortest * update_rate as usize;
+        let num_updates_needed = len_shortest * update_rate;
         let samples_per_update = len_shortest * sample_rate / update_rate;
         
         let mut td_buf = TDBufMeta::new(num_tags);
@@ -113,8 +113,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut out_left: Vec<f32> = vec![];
         let mut out_right: Vec<f32> = vec![];
         
-        for i in 0..num_updates_needed {
-            let metadata = spatial_data[i].clone();
+        for (i, metadata) in spatial_data.into_iter().enumerate() {
             let sound_start = i * samples_per_update;
             let sound_stop = (i + 1) * samples_per_update;
             let sound_slices = sound_data.iter().map(|v| &v[sound_start..sound_stop]).collect::<Vec<_>>();
