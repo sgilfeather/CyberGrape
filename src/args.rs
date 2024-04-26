@@ -9,13 +9,9 @@ pub struct GrapeArgs {
     /// Which task to perform, serialization or binauralization
     pub command: CommandTask,
 
-    /// Sample rate of the audio files, in gHz. Defaults to 44100
-    #[arg(short = 's', long = "samp", default_value_t = 44100)]
-    pub samp_rate: u64,
-
     /// How often the location of the audio blocks are sampled, in updates per second
     #[arg(short = 'u', long = "update")]
-    pub update_rate: u64,
+    pub update_rate: usize,
 }
 
 #[derive(Debug, Subcommand, Clone)]
@@ -38,7 +34,7 @@ pub struct SerialCommand {
 
     /// Number of tags to record spatial data from
     #[arg(short)]
-    pub num_tags: u32,
+    pub num_tags: usize,
 }
 
 #[derive(Debug, Args, Clone)]
@@ -46,11 +42,15 @@ pub struct SerialCommand {
 pub struct BinauralCommand {
     /// Number of input files to be assigned to audio blocks
     #[arg(short)]
-    pub num_files: u32,
+    pub num_files: usize,
 
     /// Filename for binaural audio data to be written to
     #[arg(short = 'o', long = "out")]
     pub outfile: String,
+
+    /// Sample rate of the audio files, in gHz. Defaults to 44100
+    #[arg(short = 's', long = "samp", default_value_t = 44100)]
+    pub samp_rate: usize,
 
     /// List of filenames, which should correspond to the number of input files
     #[arg(short = 'f', long = "files")]

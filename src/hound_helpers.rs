@@ -63,10 +63,13 @@ impl ToString for HoundWriter {
     }
 }
 
+/// This function, given a Vec of filenames, uses hound to read the audio
+/// data into a 2D Vec, where each Vec represents the audio file data.
 ///
-/// This function, given a Vector of filenames, uses hound to read the audio
-/// data into a 2D vector, where each vector represents the audio file data.
+/// IMPORTANT NOTE:
 ///
+///     This function does not meaningfully handle audio data
+///     with multiple channels. Only use mono files!
 pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
     let mut all_samples: Vec<Vec<f32>> = vec![];
 
