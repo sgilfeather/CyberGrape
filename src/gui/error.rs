@@ -8,7 +8,7 @@ pub enum GrapeGuiError {
     MPSCRecvError(mpsc::RecvError),
     MPSCTryRecvError(mpsc::TryRecvError),
     JoinError,
-} 
+}
 
 impl Display for GrapeGuiError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -30,13 +30,13 @@ impl From<std::io::Error> for GrapeGuiError {
     }
 }
 
-impl <T> From<mpsc::SendError<T>> for GrapeGuiError {
+impl<T> From<mpsc::SendError<T>> for GrapeGuiError {
     fn from(_: mpsc::SendError<T>) -> Self {
         Self::MPSCSendError
     }
 }
 
-impl <T> From<mpsc::TrySendError<T>> for GrapeGuiError {
+impl<T> From<mpsc::TrySendError<T>> for GrapeGuiError {
     fn from(_: mpsc::TrySendError<T>) -> Self {
         Self::MPSCSendError
     }

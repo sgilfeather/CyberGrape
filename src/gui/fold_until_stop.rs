@@ -8,6 +8,7 @@ use crossterm::{
     ExecutableCommand,
 };
 
+use log::info;
 use ratatui::{
     prelude::*,
     widgets::{
@@ -17,15 +18,14 @@ use ratatui::{
     Terminal,
 };
 
-
 enum ThreadMessage {
-    Stop
+    Stop,
 }
 
 pub fn fold_until_stop<F, T>(init: T, f: F) -> Result<T, GrapeGuiError>
 where
     F: Fn(T) -> T + Send + Sync + 'static,
-    T: Send + Sync + 'static
+    T: Send + Sync + 'static,
 {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
@@ -42,30 +42,24 @@ where
             val = f(val);
             if let Ok(ThreadMessage::Stop) = stop_rx.try_recv() {
                 res_tx.send(val).unwrap();
-                break
+                break;
             }
         }
     });
 
-
     loop {
-        let title = Title::from(" Device Selector ".magenta().bold());
-        let instructions = Title::from(Line::from(vec![
+        let title = Title::from(" Monitoring Tag Positions... ".magenta().bold());
+        let text = Paragraph::new(Line::from(vec![
             " Things are happening! ".into(),
-            " Press the spacebar to stop ".into(),
+            " Press any key to stop ".into(),
         ]));
         let block = Block::default()
             .title(title.alignment(Alignment::Center))
-            .title(
-                instructions
-                    .alignment(Alignment::Center)
-                    .position(Position::Bottom),
-            )
             .borders(Borders::ALL);
         terminal
             .draw(|frame| {
                 let area = frame.size();
-                frame.render_widget(block, area);
+                frame.render_widget(text.block(block), area);
             })
             .unwrap();
         if event::poll(std::time::Duration::from_millis(16)).unwrap() {
@@ -81,7 +75,7 @@ where
     let res = res_rx.recv()?;
     th.join().map_err(|_| GrapeGuiError::JoinError)?;
     disable_raw_mode()?;
-    stdout().execute(LeaveAlternateScreen)?;    
+    stdout().execute(LeaveAlternateScreen)?;
 
     Ok(res)
 }

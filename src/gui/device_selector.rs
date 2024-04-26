@@ -16,7 +16,6 @@ use ratatui::{
     Terminal,
 };
 
-
 pub fn device_selector(
     mut available_ports: Vec<PathBuf>,
 ) -> Result<Option<PathBuf>, GrapeGuiError> {

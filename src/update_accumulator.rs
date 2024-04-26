@@ -11,6 +11,7 @@ const BUFFER_SIZE: usize = 5;
 /// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
 /// accumulates them. It can be queried for the most recent updates using `.get_status()`.
 // The <Hdm> means that we are allowed to use `Hdm` as a type within `UpdateAccumulator`.
+#[derive(Debug)]
 pub struct UpdateAccumulator<Hdm>
 where
     // Then this binding ensures that `Hdm` implements `HardwareDataManager`.

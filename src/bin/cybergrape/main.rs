@@ -17,7 +17,7 @@ use cybergrape::{
     TransposableIter,
 };
 
-use log::{debug, info, warn};
+use log::{debug, error, info, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{
@@ -82,7 +82,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to set read timeout");
 
     let hdm = Arc::new(Mutex::new(Hdm::new()));
-    let mut accumulator = UpdateAccumulator::new(hdm.clone());
+    let th_hdm = hdm.clone();
 
     listen_on_port(port, hdm);
 
@@ -91,24 +91,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         todo!();
     } else {
         let sphericalizer = Sphericalizer::new(vec![(1.0, 1.0); num_tags]);
-        let len = 10; // TODO this needs to be an arg or interactive
 
-        let mut td_buf = TDBufMeta::new(num_tags);
+        let td_buf = TDBufMeta::new(num_tags);
         let time_delta = Duration::from_secs(1).div_f64(update_rate as f64);
 
-        gui::fold_until_stop(0, |acc| {
-            sleep(Duration::from_millis(100));
-            acc + 1
-        })?;
+        let accumulator = UpdateAccumulator::new(th_hdm);
 
-        for _ in 0..len {
-            if let Some(update) = sphericalizer.query(&mut accumulator) {
-                td_buf.add(update)
+        let (buf, _) = gui::fold_until_stop((td_buf, accumulator), move |(mut buf, mut acc)| {
+            if let Some(update) = sphericalizer.query(&mut acc) {
+                buf.add(update)
             }
             sleep(time_delta);
-        }
+            (buf, acc)
+        })?;
 
-        let data = td_buf.dump();
+        let data = buf.dump();
 
         let grape_file_builder = GrapeFile::builder().set_samplerate(update_rate);
 
