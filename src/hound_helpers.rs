@@ -68,8 +68,8 @@ impl ToString for HoundWriter {
 ///
 /// IMPORTANT NOTE:
 ///
-///     This function does not meaningfully handle audio data
-///     with multiple channels. Only use mono files!
+/// This function does not meaningfully handle audio data
+/// with multiple channels. Only use mono files!
 pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
     let mut all_samples: Vec<Vec<f32>> = vec![];
 
