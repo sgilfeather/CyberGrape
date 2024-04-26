@@ -2,7 +2,7 @@
 //! the user-speciifed output file.
 
 use crate::component::{Component, ComponentError};
-use hound::{Error as HoundError, WavReader, WavSpec, WavWriter};
+use hound::{Error as HoundError, SampleFormat, WavReader, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -16,7 +16,7 @@ pub struct HoundWriter {
 
 impl HoundWriter {
     /// Instantiates a new HoundWriter, which wraps the hound WavWriter
-    fn new(file: impl AsRef<Path>, wave_spec: WavSpec) -> Self {
+    pub fn new(file: impl AsRef<Path>, wave_spec: WavSpec) -> Self {
         let writer = WavWriter::create(file, wave_spec).unwrap();
 
         Self {
@@ -63,10 +63,13 @@ impl ToString for HoundWriter {
     }
 }
 
+/// This function, given a Vec of filenames, uses hound to read the audio
+/// data into a 2D Vec, where each Vec represents the audio file data.
 ///
-/// This function, given a Vector of filenames, uses hound to read the audio
-/// data into a 2D vector, where each vector represents the audio file data.
+/// IMPORTANT NOTE:
 ///
+/// This function does not meaningfully handle audio data
+/// with multiple channels. Only use mono files!
 pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
     let mut all_samples: Vec<Vec<f32>> = vec![];
 
@@ -84,6 +87,25 @@ pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
 
     all_samples
 }
+
+pub fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: impl AsRef<Path>) {
+    let spec = WavSpec {
+        channels: 2,
+        sample_rate: 44100,
+        bits_per_sample: 16,
+        sample_format: SampleFormat::Int,
+    };
+
+    let mut writer = WavWriter::create(out_file, spec).unwrap();
+
+    for (left, right) in std::iter::zip(left_samps, right_samps) {
+        writer.write_sample(left as i16).unwrap();
+        writer.write_sample(right as i16).unwrap();
+    }
+
+    writer.finalize().unwrap();
+}
+
 
 #[cfg(test)]
 mod tests {

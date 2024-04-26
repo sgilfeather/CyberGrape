@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 
 use crate::hdm::Hdm;
 use crate::saf::BufferMetadata;
@@ -30,7 +30,7 @@ impl Sphericalizer {
 
     // From observation, azimuth and elevation are in the range of -70 to 70 degrees (-1.22173 to 1.22173 rad)
     // This function scales them to the range -90 to 90 degrees (-PI/2 to PI/2 rad)
-    fn scale_angle(azm: f64) -> f64 {
+    fn scale_angle(azm: f32) -> f32 {
         let pi_2 = PI / 2.0;
         let scaled = azm * pi_2 / 1.22173;
         scaled.clamp(-pi_2, pi_2)
@@ -61,15 +61,21 @@ impl Sphericalizer {
                     .expect("Missing an update from the front antenna");
                 let (gain, range) = self.tag_settings[i];
                 let mut metadata = BufferMetadata {
-                    azimuth: Sphericalizer::scale_angle(back_ant.azm) as f32,
-                    elevation: Sphericalizer::scale_angle(back_ant.elv) as f32,
+                    azimuth: Sphericalizer::scale_angle(back_ant.azm as f32),
+                    elevation: Sphericalizer::scale_angle(back_ant.elv as f32),
                     range,
                     gain,
                 };
                 // The front antenna informs whether the tag is in front or behind the base antenna, since the base itself cannot tell
                 if front_ant.azm > 0.0 {
-                    metadata.azimuth = PI as f32 - metadata.azimuth;
+                    metadata.azimuth = PI - metadata.azimuth;
                 };
+
+                metadata.azimuth -= 1.5 * PI;
+
+                if metadata.azimuth < 0.0 {
+                    metadata.azimuth += 2.0 * PI;
+                }
                 metadata
             })
             .collect::<Vec<_>>()
