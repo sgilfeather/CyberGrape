@@ -16,7 +16,7 @@ pub struct HoundWriter {
 
 impl HoundWriter {
     /// Instantiates a new HoundWriter, which wraps the hound WavWriter
-    fn new(file: impl AsRef<Path>, wave_spec: WavSpec) -> Self {
+    pub fn new(file: impl AsRef<Path>, wave_spec: WavSpec) -> Self {
         let writer = WavWriter::create(file, wave_spec).unwrap();
 
         Self {

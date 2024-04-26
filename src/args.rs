@@ -10,12 +10,12 @@ pub struct GrapeArgs {
     pub command: CommandTask,
 
     /// Sample rate of the audio files, in gHz. Defaults to 44100
-    #[arg(short = 's', long = "samp", default_value_t = 44100.0)]
-    pub samp_rate: f32,
+    #[arg(short = 's', long = "samp", default_value_t = 44100)]
+    pub samp_rate: u64,
 
     /// How often the location of the audio blocks are sampled, in updates per second
     #[arg(short = 'u', long = "update")]
-    pub update_rate: f32,
+    pub update_rate: u64,
 }
 
 #[derive(Debug, Subcommand, Clone)]

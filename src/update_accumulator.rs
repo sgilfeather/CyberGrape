@@ -6,6 +6,8 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+const BUFFER_SIZE: usize = 5;
+
 /// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
 /// accumulates them. It can be queried for the most recent updates using `.get_status()`.
 // The <Hdm> means that we are allowed to use `Hdm` as a type within `UpdateAccumulator`.
@@ -54,7 +56,7 @@ where
             .accumulated_updates
             .values()
             .map(|v| {
-                let taken = v.iter().rev().take(50);
+                let taken = v.iter().rev().take(BUFFER_SIZE);
                 let len = taken.len() as f64;
                 let sum = taken
                     .cloned()
@@ -74,10 +76,8 @@ where
             .collect();
 
         for v in self.accumulated_updates.values_mut() {
-            let len = v.len();
-            if len > 100 {
-                let to_drop = len - 50;
-                v.drain(0..to_drop);
+            if v.len() > BUFFER_SIZE {
+                v.pop_front();
             }
         }
 

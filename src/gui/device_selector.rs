@@ -1,4 +1,6 @@
-use std::{error::Error, io::stdout, path::PathBuf};
+use std::{fmt::Display, io::stdout, path::PathBuf, sync::mpsc, thread::spawn};
+
+use crate::gui::error::GrapeGuiError;
 
 use crossterm::{
     event::{self, KeyCode, KeyEventKind},
@@ -14,9 +16,10 @@ use ratatui::{
     Terminal,
 };
 
-pub fn run_device_selector(
+
+pub fn device_selector(
     mut available_ports: Vec<PathBuf>,
-) -> Result<Option<PathBuf>, Box<dyn Error>> {
+) -> Result<Option<PathBuf>, GrapeGuiError> {
     enable_raw_mode()?;
     stdout().execute(EnterAlternateScreen)?;
     let mut terminal = Terminal::new(CrosstermBackend::new(stdout()))?;

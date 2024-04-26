@@ -1,7 +1,7 @@
 pub mod args;
 pub mod component;
-pub mod device_selector;
 pub mod dummy_hdm;
+pub mod gui;
 pub mod hardware_data_manager;
 pub mod hardware_message_decoder;
 pub mod hdm;
@@ -46,4 +46,40 @@ impl fmt::Display for Point {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "({:.3}, {:.3})", self.x, self.y)
     }
+}
+pub struct TransposeIter<I, T>
+where
+    I: IntoIterator<Item = T>,
+{
+    iterators: Vec<I::IntoIter>,
+}
+
+pub trait TransposableIter<I, T>
+where
+    Self: Sized,
+    Self: IntoIterator<Item = I>,
+    I: IntoIterator<Item = T>,
+{
+    fn transpose(self) -> TransposeIter<I, T> {
+        let iterators: Vec<_> = self.into_iter().map(|i| i.into_iter()).collect();
+        TransposeIter { iterators }
+    }
+}
+
+impl<I, T> Iterator for TransposeIter<I, T>
+where
+    I: IntoIterator<Item = T>,
+{
+    type Item = Vec<T>;
+    fn next(&mut self) -> Option<Self::Item> {
+        let output: Option<Vec<T>> = self.iterators.iter_mut().map(|iter| iter.next()).collect();
+        output
+    }
+}
+
+impl<I, T, Any> TransposableIter<I, T> for Any
+where
+    Any: IntoIterator<Item = I>,
+    I: IntoIterator<Item = T>,
+{
 }
