@@ -1,4 +1,4 @@
-use std::{fmt::Display, io::stdout, path::PathBuf, sync::mpsc, thread::spawn};
+use std::{io::stdout, path::PathBuf};
 
 use crate::gui::error::GrapeGuiError;
 

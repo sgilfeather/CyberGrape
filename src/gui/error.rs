@@ -1,4 +1,4 @@
-use std::{fmt::Display, sync::mpsc};
+use std::{error::Error, fmt::Display, sync::mpsc};
 
 #[derive(Debug)]
 pub enum GrapeGuiError {
@@ -15,6 +15,8 @@ impl Display for GrapeGuiError {
         write!(f, "{:#?}", self)
     }
 }
+
+impl Error for GrapeGuiError {}
 
 impl From<std::fmt::Error> for GrapeGuiError {
     fn from(value: std::fmt::Error) -> Self {

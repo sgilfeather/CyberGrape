@@ -1,13 +1,13 @@
-use std::{fmt::Display, io::stdout, path::PathBuf, sync::mpsc, thread::spawn};
+use std::{io::stdout, sync::mpsc, thread::spawn};
 
 use crate::gui::error::GrapeGuiError;
 
 use crossterm::{
-    event::{self, KeyCode, KeyEventKind},
+    event::{self, KeyEventKind},
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
     ExecutableCommand,
 };
-use nom::character;
+
 use ratatui::{
     prelude::*,
     widgets::{
@@ -22,7 +22,7 @@ enum ThreadMessage {
     Stop
 }
 
-pub fn fold_until_stop<F, T, E>(init: T, f: F) -> Result<T, GrapeGuiError>
+pub fn fold_until_stop<F, T>(init: T, f: F) -> Result<T, GrapeGuiError>
 where
     F: Fn(T) -> T + Send + Sync + 'static,
     T: Send + Sync + 'static
@@ -45,7 +45,6 @@ where
                 break
             }
         }
-
     });
 
 
