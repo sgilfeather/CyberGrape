@@ -47,6 +47,9 @@ impl fmt::Display for Point {
         write!(f, "({:.3}, {:.3})", self.x, self.y)
     }
 }
+
+// https://stackoverflow.com/a/75477884/17443903
+// I think this might stall on an empty iterator...not sure
 pub struct TransposeIter<I, T>
 where
     I: IntoIterator<Item = T>,

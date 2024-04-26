@@ -8,13 +8,9 @@ use crossterm::{
     ExecutableCommand,
 };
 
-
 use ratatui::{
     prelude::*,
-    widgets::{
-        block::{Title},
-        *,
-    },
+    widgets::{block::Title, *},
     Terminal,
 };
 

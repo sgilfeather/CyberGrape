@@ -17,7 +17,7 @@ use cybergrape::{
     TransposableIter,
 };
 
-use log::{debug, warn};
+use log::{debug, error, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{
@@ -72,7 +72,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let selected_port_opt = gui::device_selector(available_ports)?;
     let selected_port = match selected_port_opt {
         Some(port) => port,
-        None => return Ok(()),
+        None => {
+            error!("Port selection failed");
+            return Ok(());
+        }
     };
 
     // Try to open the requested port and set its read timeout to infinity
@@ -87,8 +90,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     listen_on_port(port, hdm);
 
     if let Some((_sound_data, gains, ranges)) = audio_settings {
-        let _sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
-        todo!();
+        let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
     } else {
         let sphericalizer = Sphericalizer::new(vec![(1.0, 1.0); num_tags]);
 
