@@ -8,11 +8,11 @@ use crossterm::{
     ExecutableCommand,
 };
 
-use log::info;
+
 use ratatui::{
     prelude::*,
     widgets::{
-        block::{Position, Title},
+        block::{Title},
         *,
     },
     Terminal,

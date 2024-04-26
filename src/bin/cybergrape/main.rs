@@ -17,7 +17,7 @@ use cybergrape::{
     TransposableIter,
 };
 
-use log::{debug, error, info, warn};
+use log::{debug, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{
