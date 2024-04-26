@@ -2,7 +2,7 @@
 //! the user-speciifed output file.
 
 use crate::component::{Component, ComponentError};
-use hound::{Error as HoundError, WavReader, WavSpec, WavWriter};
+use hound::{Error as HoundError, SampleFormat, WavReader, WavSpec, WavWriter};
 
 use std::fs::File;
 use std::io::BufWriter;
@@ -87,6 +87,25 @@ pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
 
     all_samples
 }
+
+pub fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: impl AsRef<Path>) {
+    let spec = WavSpec {
+        channels: 2,
+        sample_rate: 44100,
+        bits_per_sample: 16,
+        sample_format: SampleFormat::Int,
+    };
+
+    let mut writer = WavWriter::create(out_file, spec).unwrap();
+
+    for (left, right) in std::iter::zip(left_samps, right_samps) {
+        writer.write_sample(left as i16).unwrap();
+        writer.write_sample(right as i16).unwrap();
+    }
+
+    writer.finalize().unwrap();
+}
+
 
 #[cfg(test)]
 mod tests {

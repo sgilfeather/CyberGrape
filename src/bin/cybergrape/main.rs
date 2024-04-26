@@ -9,7 +9,7 @@ use cybergrape::{
     gui,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
-    hound_helpers::hound_reader,
+    hound_helpers::{hound_reader, write_stereo_output},
     saf::{Binauraliser, BinauraliserNF},
     spatial_data_format::{GrapeFile, GrapeTag},
     sphericalizer::Sphericalizer,
@@ -18,7 +18,7 @@ use cybergrape::{
     TransposableIter,
 };
 
-use log::{debug, error, warn};
+use log::{debug, info, error, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
 use std::{ str::{self, FromStr}, sync::{Arc, Mutex}, thread::spawn, time::Duration
@@ -91,14 +91,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         
         
         let shortest = sound_data.iter().map(|v| v.len()).max().expect("should have some files");
-        let len_shortest = shortest / sample_rate;
+        let len_shortest = (shortest / sample_rate) - 1;
         
         let num_updates_needed = len_shortest * update_rate;
-        let samples_per_update = len_shortest * sample_rate / update_rate;
+        let samples_per_update = sample_rate / update_rate;
         
         let mut td_buf = TDBufMeta::new(num_tags);
         let time_delta = Duration::from_secs(1).div_f64(update_rate as f64);
+
+        info!("shortest: {:#?}", shortest);
+        info!("len_shortest: {:#?}", len_shortest);
+        info!("num_updates_needed: {:#?}", num_updates_needed);
+        info!("samples_per_update: {:#?}", samples_per_update);
+        info!("time_delta: {:#?}", time_delta);
         
+        info!("gathering data");
+
         let mut accumulator = UpdateAccumulator::new(hdm.clone());
         for _ in 0..num_updates_needed {
             
@@ -113,6 +121,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut out_left: Vec<f32> = vec![];
         let mut out_right: Vec<f32> = vec![];
         
+        info!("post processing");
+
         for (i, metadata) in spatial_data.into_iter().enumerate() {
             let sound_start = i * samples_per_update;
             let sound_stop = (i + 1) * samples_per_update;
@@ -127,6 +137,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             out_left.append(&mut new_left);
             out_right.append(&mut new_right);
         }
+
+        info!("writing the output file");
+
+        write_stereo_output(out_left, out_right, outfile);
         
     } else {
         let th_hdm = hdm.clone();
