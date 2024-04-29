@@ -7,7 +7,7 @@ use std::ptr::{addr_of_mut, null, null_mut};
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
 const SAMP_RATE: i32 = 44100;
 const NUM_OUT_CHANNELS: usize = 2;
-const FRAME_SIZE: usize = 128;
+pub const FRAME_SIZE: usize = 128;
 
 const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
@@ -26,28 +26,20 @@ pub trait Binauraliser {
     /// sound source's location, range, and gain over that frame period.
     ///
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
-        let len = buffers.iter().map(|e| e.1.len()).max().unwrap_or(0);
-        let full_len = len.div_ceil(FRAME_SIZE) * FRAME_SIZE;
-
-        let buffers = buffers
-            .into_iter()
-            .map(|(metadata, buf)| {
-                let mut extended_buf = buf.to_vec();
-                extended_buf.resize(full_len, 0.0);
-
-                (*metadata, extended_buf)
-            })
-            .collect::<Vec<_>>();
-
-        let num_samples = buffers
+        let len = buffers
             .iter()
             .map(|(_tag, samples)| samples.len())
             .max()
             .unwrap_or(0);
-        let mut final_left_vec = Vec::with_capacity(num_samples);
-        let mut final_right_vec = Vec::with_capacity(num_samples);
 
-        for i in (0..(num_samples - FRAME_SIZE)).step_by(FRAME_SIZE) {
+        for (_tag, samples) in buffers.iter() {
+            debug_assert_eq!(0, samples.len() % FRAME_SIZE);
+        }
+
+        let mut final_left_vec = Vec::with_capacity(len);
+        let mut final_right_vec = Vec::with_capacity(len);
+
+        for i in (0..len).step_by(FRAME_SIZE).take(len / FRAME_SIZE) {
             let buf_lo = i;
             let buf_hi = i + FRAME_SIZE;
 
@@ -61,9 +53,6 @@ pub trait Binauraliser {
             final_left_vec.append(&mut left_vec);
             final_right_vec.append(&mut right_vec);
         }
-
-        final_left_vec.resize(len, 0.0);
-        final_right_vec.resize(len, 0.0);
 
         (final_left_vec, final_right_vec)
     }

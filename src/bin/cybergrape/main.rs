@@ -10,7 +10,7 @@ use cybergrape::{
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
     hound_helpers::{hound_reader, write_stereo_output},
-    saf::{Binauraliser, BinauraliserNF},
+    saf::{Binauraliser, BinauraliserNF, FRAME_SIZE},
     spatial_data_format::{GrapeFile, GrapeTag},
     sphericalizer::Sphericalizer,
     time_domain_buffer::TDBufMeta,
@@ -90,48 +90,63 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     listen_on_port(port, hdm.clone());
 
-    if let Some((sound_data, gains, ranges, sample_rate)) = audio_settings {
+    if let Some((mut sound_data, gains, ranges, sample_rate)) = audio_settings {
         let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
 
-        let shortest = sound_data
+        let total_samples = sound_data
             .iter()
             .map(|v| v.len())
             .max()
             .expect("should have some files");
-        let len_shortest = (shortest / sample_rate) - 1;
+        let seconds = total_samples.div_ceil(sample_rate);
 
-        let num_updates_needed = len_shortest * update_rate;
+        let num_updates_needed = seconds * update_rate;
         let samples_per_update = sample_rate / update_rate;
+        let new_samples_per_update = samples_per_update.div_ceil(FRAME_SIZE) * FRAME_SIZE;
+        let total_new_samples = new_samples_per_update * num_updates_needed;
+
+        for samples in sound_data.iter_mut() {
+            samples.resize(total_new_samples, 0.0);
+        }
 
         let mut td_buf = TDBufMeta::new(num_tags);
         let time_delta = Duration::from_secs(1).div_f64(update_rate as f64);
 
-        info!("shortest: {:#?}", shortest);
-        info!("len_shortest: {:#?}", len_shortest);
+        info!("DERIVED SETTINGS FOR THIS RUN:");
+        info!("total_samples: {:#?}", total_samples);
+        info!("seconds: {:#?}", seconds);
         info!("num_updates_needed: {:#?}", num_updates_needed);
         info!("samples_per_update: {:#?}", samples_per_update);
+        info!("new_samples_per_update: {:#?}", new_samples_per_update);
+        info!("total_new_samples: {:#?}", total_new_samples);
         info!("time_delta: {:#?}", time_delta);
 
         info!("gathering data");
 
         let mut accumulator = UpdateAccumulator::new(hdm.clone());
+
+        // wait for the accumulator to load with some data
+        sleep(Duration::from_secs_f32(0.1));
+
         for _ in 0..num_updates_needed {
             if let Some(update) = sphericalizer.query(&mut accumulator) {
                 td_buf.add(update)
+            } else {
+                warn!("we lost an update from the sphericalizer");
             }
             sleep(time_delta);
         }
         let spatial_data = td_buf.dump();
         let mut binauraliser = BinauraliserNF::new();
 
-        let mut out_left: Vec<f32> = vec![];
-        let mut out_right: Vec<f32> = vec![];
+        let mut out_left = Vec::with_capacity(total_new_samples);
+        let mut out_right = Vec::with_capacity(total_new_samples);
 
         info!("post processing");
 
         for (i, metadata) in spatial_data.into_iter().enumerate() {
-            let sound_start = i * samples_per_update;
-            let sound_stop = (i + 1) * samples_per_update;
+            let sound_start = i * new_samples_per_update;
+            let sound_stop = (i + 1) * new_samples_per_update;
             let sound_slices = sound_data
                 .iter()
                 .map(|v| &v[sound_start..sound_stop])
@@ -146,6 +161,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             out_left.append(&mut new_left);
             out_right.append(&mut new_right);
         }
+
+        out_left.truncate(total_samples);
+        out_right.truncate(total_samples);
 
         info!("writing the output file");
 
