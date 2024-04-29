@@ -88,7 +88,11 @@ pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
     all_samples
 }
 
-pub fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: impl AsRef<Path>) {
+pub fn write_stereo_output(
+    left_samps: Vec<f32>,
+    right_samps: Vec<f32>,
+    out_file: impl AsRef<Path>,
+) {
     let spec = WavSpec {
         channels: 2,
         sample_rate: 44100,
@@ -105,7 +109,6 @@ pub fn write_stereo_output(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file
 
     writer.finalize().unwrap();
 }
-
 
 #[cfg(test)]
 mod tests {

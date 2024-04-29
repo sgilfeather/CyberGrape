@@ -26,6 +26,19 @@ pub trait Binauraliser {
     /// sound source's location, range, and gain over that frame period.
     ///
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
+        let len = buffers.iter().map(|e| e.1.len()).max().unwrap_or(0);
+        let full_len = len.div_ceil(FRAME_SIZE) * FRAME_SIZE;
+
+        let buffers = buffers
+            .into_iter()
+            .map(|(metadata, buf)| {
+                let mut extended_buf = buf.to_vec();
+                extended_buf.resize(full_len, 0.0);
+
+                (*metadata, extended_buf)
+            })
+            .collect::<Vec<_>>();
+
         let num_samples = buffers
             .iter()
             .map(|(_tag, samples)| samples.len())
@@ -48,6 +61,10 @@ pub trait Binauraliser {
             final_left_vec.append(&mut left_vec);
             final_right_vec.append(&mut right_vec);
         }
+
+        final_left_vec.resize(len, 0.0);
+        final_right_vec.resize(len, 0.0);
+
         (final_left_vec, final_right_vec)
     }
 }

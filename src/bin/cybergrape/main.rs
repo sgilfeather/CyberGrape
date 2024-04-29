@@ -18,10 +18,14 @@ use cybergrape::{
     TransposableIter,
 };
 
-use log::{debug, info, error, warn};
+use log::{debug, error, info, warn};
 use serial2::SerialPort;
 use spin_sleep::sleep;
-use std::{ str::{self, FromStr}, sync::{Arc, Mutex}, thread::spawn, time::Duration
+use std::{
+    str::{self, FromStr},
+    sync::{Arc, Mutex},
+    thread::spawn,
+    time::Duration,
 };
 
 const BAUD_RATE: u32 = 115200;
@@ -53,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 hound_reader(binaural_command.filenames),
                 binaural_command.gains,
                 binaural_command.ranges,
-                binaural_command.samp_rate
+                binaural_command.samp_rate,
             )),
         ),
         Serial(serial_command) => (
@@ -83,19 +87,22 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("Failed to set read timeout");
 
     let hdm = Arc::new(Mutex::new(Hdm::new()));
-    
+
     listen_on_port(port, hdm.clone());
-    
+
     if let Some((sound_data, gains, ranges, sample_rate)) = audio_settings {
         let sphericalizer = Sphericalizer::new(gains.into_iter().zip(ranges).collect());
-        
-        
-        let shortest = sound_data.iter().map(|v| v.len()).max().expect("should have some files");
+
+        let shortest = sound_data
+            .iter()
+            .map(|v| v.len())
+            .max()
+            .expect("should have some files");
         let len_shortest = (shortest / sample_rate) - 1;
-        
+
         let num_updates_needed = len_shortest * update_rate;
         let samples_per_update = sample_rate / update_rate;
-        
+
         let mut td_buf = TDBufMeta::new(num_tags);
         let time_delta = Duration::from_secs(1).div_f64(update_rate as f64);
 
@@ -104,12 +111,11 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("num_updates_needed: {:#?}", num_updates_needed);
         info!("samples_per_update: {:#?}", samples_per_update);
         info!("time_delta: {:#?}", time_delta);
-        
+
         info!("gathering data");
 
         let mut accumulator = UpdateAccumulator::new(hdm.clone());
         for _ in 0..num_updates_needed {
-            
             if let Some(update) = sphericalizer.query(&mut accumulator) {
                 td_buf.add(update)
             }
@@ -117,16 +123,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         let spatial_data = td_buf.dump();
         let mut binauraliser = BinauraliserNF::new();
-        
+
         let mut out_left: Vec<f32> = vec![];
         let mut out_right: Vec<f32> = vec![];
-        
+
         info!("post processing");
 
         for (i, metadata) in spatial_data.into_iter().enumerate() {
             let sound_start = i * samples_per_update;
             let sound_stop = (i + 1) * samples_per_update;
-            let sound_slices = sound_data.iter().map(|v| &v[sound_start..sound_stop]).collect::<Vec<_>>();
+            let sound_slices = sound_data
+                .iter()
+                .map(|v| &v[sound_start..sound_stop])
+                .collect::<Vec<_>>();
 
             assert_eq!(metadata.len(), sound_slices.len());
 
@@ -141,7 +150,6 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("writing the output file");
 
         write_stereo_output(out_left, out_right, outfile);
-        
     } else {
         let th_hdm = hdm.clone();
         let sphericalizer = Sphericalizer::new(vec![(1.0, 1.0); num_tags]);
