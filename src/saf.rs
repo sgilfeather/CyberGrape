@@ -39,7 +39,7 @@ pub trait Binauraliser {
         let mut final_left_vec = Vec::with_capacity(len);
         let mut final_right_vec = Vec::with_capacity(len);
 
-        for i in (0..len).step_by(FRAME_SIZE).take(len / FRAME_SIZE) {
+        for i in (0..len).step_by(FRAME_SIZE) {
             let buf_lo = i;
             let buf_hi = i + FRAME_SIZE;
 
