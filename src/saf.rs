@@ -196,7 +196,6 @@ mod tests {
     use super::*;
 
     use hound::{SampleFormat, WavSpec, WavWriter};
-    use log::warn;
     use std::f32::consts::PI;
 
     const MOCK_METADATA: BufferMetadata = BufferMetadata {
