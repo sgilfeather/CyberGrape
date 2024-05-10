@@ -1,6 +1,8 @@
 .vscode
 /target
 .DS_Store
+*.grape
+*.wav
 
 
 # Added by cargo
