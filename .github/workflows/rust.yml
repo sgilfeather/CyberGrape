@@ -34,7 +34,7 @@ jobs:
       run: cargo test --verbose
     - name: Make Documentation
       run: |
-        cargo doc --verbose --no-deps
+        cargo doc --verbose --no-deps --document-private-items
         rm -rf ./docs
         echo "<meta http-equiv=\"refresh\" content=\"0; url=cybergrape\">" > target/doc/index.html
         rm target/doc/.lock
