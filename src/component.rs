@@ -1,5 +1,7 @@
-//! Defines the Component trait, to be used by each CyberGrape processing
-//! module. This enforces a common interface between modules, so that each
+//! Defines the Component trait, which was going to be used by each CyberGrape
+//! processing module.
+//!
+//! This enforces a common interface between modules, so that each
 //! module can consume data from the preceding module, process it, and pass
 //! new data to the subsequent module in the CyberGrape pipeline.
 
@@ -7,20 +9,24 @@ use log::{info, warn};
 use std::sync::mpsc::{Receiver, Sender};
 use std::thread::{self, JoinHandle};
 
+#[allow(missing_docs)]
 #[derive(Debug)]
 pub enum ComponentError {
     HoundError(hound::Error),
 }
 
-///
 /// A stage in the CyberGrape pipeline, which performs a step of the data
 /// aggregation, binauralization, or music playback process. All structs
 /// that perform a processing step in the CyberGrape system must implement
 /// Component, so that they can be integrated into the pipeline.
-///
-pub trait Component: ToString {
+pub trait Component {
+    /// The type of data the component takes as input
     type InData;
+    /// The type of data the component produces as output
     type OutData;
+
+    /// Return the name of the component, for logging
+    fn name(&self) -> String;
 
     /// Converts an input of type A into an output of type B
     fn convert(&mut self, input: Self::InData) -> Self::OutData;
@@ -28,6 +34,7 @@ pub trait Component: ToString {
     /// Cleans up at termination of pipeline
     fn finalize(&mut self) -> Result<(), ComponentError>;
 }
+
 
 /// Runs the given Component on its own thread. On receiving data of type
 /// InData on the input channel, the Component converts them to data of type
@@ -45,17 +52,17 @@ where
         while let Ok(data) = input.recv() {
             let out_data = component.convert(data);
             if let Err(error) = output.send(out_data) {
-                warn!("{} : received error {}.", component.to_string(), error);
+                warn!("{} : received error {}.", component.name(), error);
             }
         }
 
         if let Err(component_error) = component.finalize() {
             warn!(
                 "{} : error during terminating : {component_error:?}.",
-                component.to_string(),
+                component.name(),
             );
         }
-        info!("{} : terminated.", component.to_string());
+        info!("{} : terminated.", component.name());
     })
 }
 
@@ -77,18 +84,16 @@ mod tests {
         type InData = i32;
         type OutData = i32;
 
+        fn name(&self) -> String {
+            "MockComponent".to_string()
+        }
+
         fn convert(&mut self, input: i32) -> i32 {
             input + 1
         }
 
         fn finalize(&mut self) -> Result<(), ComponentError> {
             Ok(())
-        }
-    }
-
-    impl ToString for MockComponent {
-        fn to_string(&self) -> String {
-            "MockComponent".to_string()
         }
     }
 

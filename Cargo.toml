@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2021"
 build = "build.rs"
 default-run = "cybergrape"
+license = "MPL"
+license-file = "LICENSE"
 
 [lib]
 name = "cybergrape"

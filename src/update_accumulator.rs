@@ -1,4 +1,4 @@
-//! TODO
+//! Stores the most recent [`Update`] for any given source/destination pair.
 
 use crate::hardware_data_manager::{HardwareDataManager, Id, Update};
 use std::{
@@ -8,21 +8,22 @@ use std::{
 
 const BUFFER_SIZE: usize = 5;
 
-/// The `UpdateAccumulator` consumes updates from a `HardwareDataManager`, and
-/// accumulates them. It can be queried for the most recent updates using `.get_status()`.
+/// The `UpdateAccumulator` consumes updates from a [`HardwareDataManager`], and
+/// accumulates them. It can be queried for the most recent updates using [`get_status`](UpdateAccumulator::get_status).
 // The <Hdm> means that we are allowed to use `Hdm` as a type within `UpdateAccumulator`.
 #[derive(Debug)]
 pub struct UpdateAccumulator<Hdm>
 where
     // Then this binding ensures that `Hdm` implements `HardwareDataManager`.
     Hdm: HardwareDataManager,
-{
+{   
+    /// A handle to communicate with the [`Hdm`]
     // `Rc` means this is a "reference-counted" smart pointer, and `RefCell` means we
     // are going to enforce the borrow checking rules at runtime instead of
     // compile time. This way we can keep references to the HDM in several scopes.
     hdm_handle: Arc<Mutex<Hdm>>,
 
-    // A HashMap mapping `(Id, Id)` pairs to `Update`s.
+    /// A HashMap mapping `(Id, Id)` pairs to `Update`s.
     accumulated_updates: HashMap<(Id, Id), VecDeque<Update>>,
 }
 
@@ -34,7 +35,7 @@ impl<Hdm> UpdateAccumulator<Hdm>
 where
     Hdm: HardwareDataManager,
 {
-    /// Instantiates a new `UpdateAccumulator` attached to a `Hdm`
+    /// Instantiates a new [`UpdateAccumulator`] attached to a [`Hdm`]
     pub fn new(hdm_handle: Arc<Mutex<Hdm>>) -> Self {
         Self {
             hdm_handle,
@@ -42,7 +43,7 @@ where
         }
     }
 
-    /// Returns a `Vec` contatining the most recent `Update`s for all pairs
+    /// Returns a vec contatining the most recent [`Update`]s for all pairs
     /// of blocks. Essentially, the most updated data available.
     pub fn get_status(&mut self) -> Vec<Update> {
         for update in self.hdm_handle.lock().unwrap().by_ref() {

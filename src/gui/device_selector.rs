@@ -16,6 +16,8 @@ use ratatui::{
     Terminal,
 };
 
+/// Generates a TUI that allows the user to select which serial
+/// device is attached to the u-blox antenna.
 pub fn device_selector(
     mut available_ports: Vec<PathBuf>,
 ) -> Result<Option<PathBuf>, GrapeGuiError> {

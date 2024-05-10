@@ -1,3 +1,5 @@
+//! The thread-safe buffer where we will store [`UUDFEvent`]s from the antennas.
+
 use crate::hardware_data_manager::{HardwareDataManager, Update};
 use crate::hardware_message_decoder::UUDFEvent;
 
@@ -7,18 +9,22 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+/// A [`HardwareDataManager`] that simply acts as a thread-safe buffer where
+/// we can store [`UUDFEvent`]s from the antennas.
 #[derive(Debug, Default)]
 pub struct Hdm {
     msgs: Arc<Mutex<VecDeque<Update>>>,
 }
 
 impl Hdm {
+    /// Instantiae a new [`Hdm`] with a thread-safe buffer.
     pub fn new() -> Self {
         Hdm {
             msgs: Arc::new(Mutex::new(VecDeque::new())),
         }
     }
 
+    /// Insert a new [`UUDFEvent`] into the thread-safe buffer.
     pub fn add_update(&self, event: UUDFEvent) {
         let new_update = Update {
             src: event.anchor_id as usize,

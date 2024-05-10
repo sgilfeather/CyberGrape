@@ -1,7 +1,12 @@
+//! An interface definition for the hardware/software barrier.
+
 // This is just like the typedef you've seen in C. `pub` means that someone
 // who imports this module (everything in this file) will have access to those
 // type aliases.
+/// [Wikipedia's description](https://en.wikipedia.org/wiki/Radian)
 pub type Radian = f64;
+/// We will identify each object with a unique pointer-sized integer...hopefully
+/// that will be enough!
 pub type Id = usize;
 
 // The `#[derive(...)]` bit here is actually a macro. We are saying we want the
@@ -16,15 +21,16 @@ pub type Id = usize;
 // struct to make a copy. All nested types must implement `Clone` for this
 // to work.
 
-/// This struct represents a radial measurement taken from `src` to `dst`. `azm`
-/// represents the radians of the angle from `src` to `dst` in the x/y plane,
-/// which we call the "azimuth". `elv` represents the angle from `src` to `dst`
-/// _above_ the x/y plane, this is called "elevation".
+/// This struct represents a radial measurement taken from `src` to `dst`.
 #[derive(Debug, Clone)]
 pub struct Update {
+    /// The identifier of the object that we are measuring from
     pub src: Id,
+    /// The identifier of the object that we are measuring to
     pub dst: Id,
+    /// The angle from `src` to `dst` _above_ the x/y plane, this is called "elevation".
     pub elv: Radian,
+    /// The radians of the angle from `src` to `dst` in the x/y plane, which we call the "azimuth".
     pub azm: Radian,
 }
 
@@ -33,7 +39,7 @@ pub struct Update {
 // generically. We've defined the `HardwareDataManager` trait to also require
 // that the
 
-/// A typed, clearable iterator that emits `Update`s when iterated upon. Designed
+/// A typed, clearable iterator that emits [`Update`]s when iterated upon. Designed
 /// to be maximally flexable to allow various implementations.
 pub trait HardwareDataManager: Iterator<Item = Update> {
     /// Empties the message queue contained within the `HardwareDataManager`.

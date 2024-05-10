@@ -1,4 +1,5 @@
-//! TODO
+//! A combinator parser built with [nom](https://docs.rs/nom/latest/nom/) that
+//! reads u-blox events.
 
 use nom::{
     branch::alt,
@@ -12,9 +13,12 @@ use nom::{
 
 use std::str::FromStr;
 
+/// The various kinds of messages that can be sent from the u-blox antenna.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum HardwareEvent {
+    /// A real measurement from a specific anetnna/tag pair
     UUDFEvent(UUDFEvent),
+    /// A "heartbeat" message with no measurement
     UUDFPEvent(UUDFPEvent),
 }
 
@@ -36,9 +40,11 @@ impl FromStr for HardwareEvent {
     }
 }
 
+/// Indicates that the tag is alive and communicating
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFPEvent {
-    pub instance_id: u64,
+    /// The ID of teh tag whose data is being reported
+    pub tag_id: u64,
 }
 
 impl FromStr for UUDFPEvent {
@@ -54,8 +60,8 @@ impl FromStr for UUDFPEvent {
     }
 }
 
-/// The various data found in a UUDF event that comes over UART from the
-/// u-blox antenna board.
+/// All of the information about a specific measurement between a particular
+/// tag/antenna pair.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct UUDFEvent {
     /// The ID of the tag whose data is being reported
@@ -162,7 +168,9 @@ fn parse_uudfp_event(s: &str) -> IResult<&str, UUDFPEvent> {
             preceded(tag("+UUDFP:"), parse_id),
             preceded(char(','), hex_digit1),
         )),
-        |(instance_id, _other_hex)| UUDFPEvent { instance_id },
+        |(instance_id, _other_hex)| UUDFPEvent {
+            tag_id: instance_id,
+        },
     )(s)
 }
 
@@ -247,7 +255,7 @@ mod tests {
         assert_eq!(
             res,
             UUDFPEvent {
-                instance_id: 0x6C3DEBAFAEE4,
+                tag_id: 0x6C3DEBAFAEE4,
             }
         );
     }
@@ -282,7 +290,7 @@ mod tests {
         assert_eq!(
             res,
             HardwareEvent::UUDFPEvent(UUDFPEvent {
-                instance_id: 0x6C3DEBAFAEE4,
+                tag_id: 0x6C3DEBAFAEE4,
             })
         );
     }

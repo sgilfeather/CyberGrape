@@ -9,7 +9,7 @@ use cybergrape::{
     gui,
     hardware_message_decoder::HardwareEvent,
     hdm::Hdm,
-    hound_helpers::{hound_reader, write_stereo_output},
+    hound_helpers::{hound_reader, hound_writer},
     saf::{Binauraliser, BinauraliserNF, FRAME_SIZE},
     spatial_data_format::{GrapeFile, GrapeTag},
     sphericalizer::Sphericalizer,
@@ -167,7 +167,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         info!("writing the output file");
 
-        write_stereo_output(out_left, out_right, outfile);
+        hound_writer(out_left, out_right, outfile);
     } else {
         let th_hdm = hdm.clone();
         let sphericalizer = Sphericalizer::new(vec![(1.0, 1.0); num_tags]);

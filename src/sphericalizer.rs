@@ -1,17 +1,17 @@
+//! The system for converting readings from two antenna into one spherical
+//! coordinate.
+
 use std::f32::consts::PI;
 
 use crate::hdm::Hdm;
 use crate::saf::BufferMetadata;
 use crate::update_accumulator::UpdateAccumulator;
 
-/* IDs of our particular antennas and tags
-
-   Back antenna (base) = 118875763481542
-   Front antenna (aux) = 118875763481510
-
-   Tag 1 = 118875764010724
-   Tag 2 = 118875764011634
-*/
+// IDs of our particular antennas and tags
+// Back antenna (base) = 118875763481542
+// Front antenna (aux) = 118875763481510
+// Tag 1 = 118875764010724
+// Tag 2 = 118875764011634
 
 const BACK_ANTENNA: usize = 118875763481542;
 const FRONT_ANTENNA: usize = 118875763481510;
@@ -19,23 +19,29 @@ const FRONT_ANTENNA: usize = 118875763481510;
 // A tuple of the gain and range of the tags
 type TagSetting = (f32, f32);
 
+/// Converts from raw antenna measurements into a spherical coordinate and bundles
+/// range and gain into a [`BufferMetadata`] struct to pass into a [`Binauraliser`](crate::saf::Binauraliser).
 pub struct Sphericalizer {
     tag_settings: Vec<TagSetting>,
 }
 
 impl Sphericalizer {
+    /// Instantiates a new `Sphericalizer`, storing the gains and ranges of the
+    /// tags that we will be looking for.
     pub fn new(tag_settings: Vec<TagSetting>) -> Self {
         Self { tag_settings }
     }
 
-    // From observation, azimuth and elevation are in the range of -70 to 70 degrees (-1.22173 to 1.22173 rad)
-    // This function scales them to the range -90 to 90 degrees (-PI/2 to PI/2 rad)
+    /// From observation, azimuth and elevation are in the range of -70 to 70 degrees (-1.22173 to 1.22173 rad)
+    /// This function scales them to the range -90 to 90 degrees (-PI/2 to PI/2 rad)
     fn scale_angle(azm: f32) -> f32 {
         let pi_2 = PI / 2.0;
         let scaled = azm * pi_2 / 1.22173;
         scaled.clamp(-pi_2, pi_2)
     }
 
+    /// Pulls updates out of the [`UpdateAccumulator`], sphericalizes them, bundles
+    /// the associated gain and range, generating a vec of [`BufferMetadata`].
     pub fn query(&self, acc: &mut UpdateAccumulator<Hdm>) -> Option<Vec<BufferMetadata>> {
         let mut updates = acc.get_status();
         // There should be two updates for each tag since there are two antennas

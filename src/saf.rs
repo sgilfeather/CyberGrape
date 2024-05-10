@@ -7,24 +7,29 @@ use std::ptr::{addr_of_mut, null, null_mut};
 // Sets all audio channel distances to 1 meter—— stretch goal to specify per channel
 const SAMP_RATE: usize = 44100;
 const NUM_OUT_CHANNELS: usize = 2;
+
+/// The number of samples that can be processed in one frame by a [`Binauraliser`].
 pub const FRAME_SIZE: usize = 128;
 
 const RAD_TO_DEGREE: f32 = 180.0 / std::f32::consts::PI;
 
-///
 /// A Binauraliser is anything that can take an array of sound buffers, paired
 /// with their associated metadata, and return a pair of freshly allocated
 /// buffers representing the mixed stereo audio.
-///
 pub trait Binauraliser {
-    fn new() -> Self;
+    /// Takes a slice of audio data tuples for each sound source. Each tuple
+    /// contains 128 frames of float sound data and a [`BufferMetadata`],
+    /// which encodes the sound source's location, range, and gain over that
+    /// frame period.
+    ///
+    /// Returns a pair of vectors containing the mixed binaural audio.
+    ///
+    /// Invariant: All input buffers must be the same length, of 128
     fn process_frame(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>);
 
-    ///
     /// Takes a slice of audio data tuples for each sound source. Each tuple
     /// contains float sound data and a BufferMetadata, which encodes the
     /// sound source's location, range, and gain over that frame period.
-    ///
     fn process(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         let len = buffers
             .iter()
@@ -62,46 +67,41 @@ pub trait Binauraliser {
 /// position, range, and gain.
 #[derive(Clone, Copy, Debug)]
 pub struct BufferMetadata {
+    /// The azimuth of the sound from the listener, in degrees, with 0.0 being
+    /// directly in front of the listener
     pub azimuth: f32,
+    /// The elevation of the sound from the listener, in degrees, with 0.0
+    /// indicating that the sound is level with the listener's head
     pub elevation: f32,
+    /// The distance of the sound from the listener
     pub range: f32,
-    // gain: amount of amplification applied to a signal
-    // ratio between the input volume and the output volume
+    /// Amount of amplification applied to a signal
     pub gain: f32,
 }
 
-/// Impl of Binauraliser that uses SAF's BinauraliserNF (Near Field)
+/// Implementation of [`Binauraliser`] that uses SAF's BinauraliserNF (Near Field)
 pub struct BinauraliserNF {
-    // stores C-style BinauraliserNF object, for use in libsaf
+    /// stores C-style BinauraliserNF object, for use in libsaf
     h_bin: *mut c_void,
 }
 
-impl Binauraliser for BinauraliserNF {
-    /// Creates a new BinauraliserNF
-    fn new() -> Self {
+impl BinauraliserNF {
+    /// Creates a new [`BinauraliserNF`]
+    pub fn new() -> Self {
         let mut h_bin = null_mut();
         unsafe {
             saf_raw::binauraliserNF_create(addr_of_mut!(h_bin));
 
             // initialize sample rate
             saf_raw::binauraliserNF_init(h_bin, SAMP_RATE as i32);
-
             saf_raw::binauraliser_setUseDefaultHRIRsflag(h_bin, 1);
         }
 
         BinauraliserNF { h_bin }
     }
+}
 
-    ///
-    /// Takes a slice of audio data tuples for each sound source. Each tuple
-    /// contains 128 frames of float sound data and a BufferMetadata,
-    /// which encodes the sound source's location, range, and gain over that
-    /// frame period.
-    ///
-    /// Returns a pair of vectors containing the mixed binaural audio.
-    ///
-    /// Invariant: All input buffers must be the same length, of 128
-    ///
+impl Binauraliser for BinauraliserNF {
     fn process_frame(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         for (_, b) in buffers {
             debug_assert_eq!(b.len(), FRAME_SIZE);
@@ -176,12 +176,10 @@ impl Drop for BinauraliserNF {
     }
 }
 
-struct DummyBinauraliser {}
+#[allow(dead_code)]
+struct DummyBinauraliser;
 
 impl Binauraliser for DummyBinauraliser {
-    fn new() -> Self {
-        Self {}
-    }
     fn process_frame(&mut self, buffers: &[(BufferMetadata, &[f32])]) -> (Vec<f32>, Vec<f32>) {
         for (_, b) in buffers {
             debug_assert_eq!(b.len(), FRAME_SIZE);
@@ -281,8 +279,8 @@ mod tests {
         let g_note_vec: Vec<f32> = create_sine_wave(FRAME_SIZE, G);
 
         let frame_slice = [
-            (LEFT_METADATA, &c_note_vec[0..FRAME_SIZE]),
-            (RIGHT_METADATA, &g_note_vec[0..FRAME_SIZE]),
+            (LEFT_METADATA, c_note_vec.as_slice()),
+            (RIGHT_METADATA, g_note_vec.as_slice()),
         ];
 
         // assert no segfault and that data is non-null
@@ -311,8 +309,5 @@ mod tests {
         let (left_samps, right_samps) = binauraliser_nf.process(frame_slice.as_ref());
         assert!(left_samps.clone().into_iter().all(|x| x != 0.0));
         assert!(right_samps.clone().into_iter().all(|x| x != 0.0));
-
-        // toggle writing output
-        // write_stereo_output(left_samps, right_samps, "/Users/Skylar.Gilfeather/Desktop/out.wav");
     }
 }
