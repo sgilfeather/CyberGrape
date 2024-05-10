@@ -51,21 +51,26 @@ struct GrapeFileHeader {
 }
 
 /// The [GrapeTag] identifies the _kind_ of spatial data contained within a
-/// particular stream. [GrapeTag::X], [GrapeTag::Y], and [GrapeTag::Z] represent
-/// position in cartesian coordinates. [GrapeTag::Azimuth], [GrapeTag::Elevation],
-/// and [GrapeTag::Range] represent position in spherical coordinates; and
-/// [GrapeTag::Pitch], [GrapeTag::Yaw], and [GrapeTag::Roll] represent angular
-/// directions.
+/// particular stream.
 #[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum GrapeTag {
+    /// X position in cartesian coordinates
     X,
+    /// Y position in cartesian coordinates
     Y,
+    /// Z position in cartesian coordinates
     Z,
+    /// Azimuth in spherical coordinates
     Azimuth,
+    /// Elevation in spherical coordinates
     Elevation,
+    /// Range in spherical coordinates
     Range,
+    /// Pitch in angular direction
     Pitch,
+    /// Yaw in angular direction
     Yaw,
+    /// Roll in angular direction
     Roll,
 }
 

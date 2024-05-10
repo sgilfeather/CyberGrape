@@ -1,8 +1,33 @@
-//! TODO
+//! Converts radial points into cartesian points
 
 use crate::hardware_data_manager::Update;
-use crate::Point;
 use std::f64::consts::PI;
+
+/// A simple x/y cartesian point
+#[allow(missing_docs)]
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[allow(missing_docs)]
+impl Point {
+    #[allow(dead_code)]
+    pub fn abs_dist(&self, other: &Self) -> f64 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
+
+    pub fn new(x: f64, y: f64) -> Self {
+        Point { x, y }
+    }
+}
+
+impl std::fmt::Display for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "({:.3}, {:.3})", self.x, self.y)
+    }
+}
 
 /// Given a list of `Update` structs containing the angular measurements between
 /// points, computes the cartesian positions of the points.

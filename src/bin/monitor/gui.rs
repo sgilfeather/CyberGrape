@@ -6,6 +6,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
+use cybergrape::localizer::Point;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     style::{Color, Style},
@@ -18,8 +19,6 @@ use std::{
     io,
     time::{Duration, Instant},
 };
-
-use cybergrape::Point;
 
 // This is a function pointer in Rust! The important bit is on the right side. The
 // FnMut says that it is a function, () means that it takes no arguments, and

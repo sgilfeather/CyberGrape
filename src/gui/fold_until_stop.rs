@@ -18,6 +18,12 @@ enum ThreadMessage {
     Stop,
 }
 
+/// Generates a gui that runs a function until the user provides input.
+///
+/// The function can be thought of as a recursive fold. `init` contains the
+/// inital state of the loop, then `f` is called on the inital state to produce
+/// a new state, and then `f` is called on that new state, and so on until the
+/// user indicates that this should stop.
 pub fn fold_until_stop<F, T>(init: T, f: F) -> Result<T, GrapeGuiError>
 where
     F: Fn(T) -> T + Send + Sync + 'static,

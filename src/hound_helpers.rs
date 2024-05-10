@@ -54,11 +54,9 @@ impl Component for HoundWriter {
 
         writer.finalize().map_err(ComponentError::HoundError)
     }
-}
 
-impl ToString for HoundWriter {
-    /// Converts the HoundWriter to a String, i.e. returns its name
-    fn to_string(&self) -> String {
+    /// Converts the HoundWriter's name
+    fn name(&self) -> String {
         "HoundWriter".to_string()
     }
 }
@@ -88,11 +86,8 @@ pub fn hound_reader(filenames: Vec<String>) -> Vec<Vec<f32>> {
     all_samples
 }
 
-pub fn write_stereo_output(
-    left_samps: Vec<f32>,
-    right_samps: Vec<f32>,
-    out_file: impl AsRef<Path>,
-) {
+/// Writes two vectors of samples to a file on the disk in WAV format
+pub fn hound_writer(left_samps: Vec<f32>, right_samps: Vec<f32>, out_file: impl AsRef<Path>) {
     let spec = WavSpec {
         channels: 2,
         sample_rate: 44100,

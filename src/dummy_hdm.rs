@@ -1,7 +1,8 @@
-//! TODO
+//! A dummy implementation of a [`HardwareDataManager`] that pretends
+//! that there is a static circle of sound sources around the listener
 
 use crate::hardware_data_manager::*;
-use crate::Point;
+use crate::localizer::Point;
 use rand::prelude::*;
 use std::collections::VecDeque;
 use std::f64::consts::PI;
@@ -9,8 +10,8 @@ use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
-/// A dummy implementation of a `HardwareDataManager` that currently pretends
-/// that there is a static circle of sound sources around the listener
+/// Manages a thread that produces updates as if there is a circle of sound
+/// sources around the listener.
 pub struct DummyHdm {
     handle: Option<thread::JoinHandle<()>>,
     tx: mpsc::Sender<Signal>,
@@ -189,9 +190,11 @@ impl Default for DummyHdm {
     }
 }
 
-/// Given a num_points, generate num_points angle measurements in radians,
-/// distributed evenly around a circle. Then, convert these angles into
-/// 2D Cartesian Points around a circle with radius range.
+/// Generate points in a circle around the origin.
+///
+/// Creates `num_points` angle measurements in radians, distributed evenly
+/// around a circle. Then, converts these angles into 2D Cartesian Points
+/// around a circle with radius `range`.
 fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     let mut others: Vec<_> = (0..num_points)
         .map(|v| -> Radian { (v as f64 / num_points as f64) * 2.0 * PI })
@@ -208,7 +211,7 @@ fn generate_circular_points(num_points: usize, range: f64) -> Vec<Point> {
     others
 }
 
-/// Given an array of Points, generate Updates that describe the azimuth
+/// Given a slice of [`Point`]s, generate [`Update`]s that describe the azimuth
 /// between all possible pairs of Points (with some noise).
 ///
 /// All updates are "flat" for this function, meaning that they have
@@ -246,6 +249,8 @@ fn generate_flat_updates(points: &[Point], noise: f64) -> VecDeque<Update> {
         .collect()
 }
 
+/// Take a slice of [`Update`]s and apply a bit of vertical noise so that they
+/// are no longer pinned to the x/y plane.
 #[allow(dead_code)]
 fn unflatten_updates(updates: &[Update], noise: f64) -> VecDeque<Update> {
     let mut rng = thread_rng();

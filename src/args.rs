@@ -1,7 +1,8 @@
-// Commandline argument parser using clap for CyberGrape
+//! Command line argument parser using [clap](https://docs.rs/clap/latest/clap/) for CyberGrape
 
 use clap::{Args, Parser, Subcommand};
 
+/// The high-level argument struct for CyberGrape
 #[derive(Debug, Parser, Clone)]
 #[clap(version, about)]
 pub struct GrapeArgs {
@@ -14,6 +15,7 @@ pub struct GrapeArgs {
     pub update_rate: usize,
 }
 
+/// A selector for wether we want to binauralize a file or generate positional data
 #[derive(Debug, Subcommand, Clone)]
 pub enum CommandTask {
     /// Encode positional data to a file in the GrapeFile format
@@ -25,6 +27,7 @@ pub enum CommandTask {
     Binaural(BinauralCommand),
 }
 
+/// The arguments needed to generate positional data
 #[derive(Debug, Args, Clone)]
 #[command(version, about)]
 pub struct SerialCommand {
@@ -37,6 +40,7 @@ pub struct SerialCommand {
     pub num_tags: usize,
 }
 
+/// The arguments needed to binauralize sounds
 #[derive(Debug, Args, Clone)]
 #[command(version, about)]
 pub struct BinauralCommand {

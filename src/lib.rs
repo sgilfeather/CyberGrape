@@ -1,3 +1,21 @@
+//! This is the 2023/2024 senior capstone project for Team CyberGrape, which is
+//! comprised of Ayda Aricanli, Skylar Gilfeather, Liam Strand, and Tyler
+//! Thompson.
+//!
+//! CyberGrape consists of a system of tactile blocks that represent audio
+//! sources, or audio blocks, that track their angle and movement relative
+//! to a central block, called the listener block. As audio blocks and the
+//! listener block move relative to each other, their relative angles are
+//! recorded. A software pipeline should be able to either encode the
+//! streamed positional data into a well-defined serialization format or
+//! create spatial audio directly using user-provided audio data.
+//!
+//! This is the host-side software that makes all of that happen, to see the
+//! embedded software, take a look at [this GitHub repository](https://github.com/sgilfeather/CyberGrapeEmbedded).
+//!
+//! You can find our [final report](report) in this documentation site.
+//!
+#![warn(missing_docs)]
 pub mod args;
 pub mod component;
 pub mod dummy_hdm;
@@ -7,6 +25,7 @@ pub mod hardware_message_decoder;
 pub mod hdm;
 pub mod hound_helpers;
 pub mod localizer;
+pub mod report;
 pub mod saf;
 mod saf_raw;
 pub mod spatial_data_format;
@@ -14,42 +33,9 @@ pub mod sphericalizer;
 pub mod time_domain_buffer;
 pub mod update_accumulator;
 
-use std::fmt;
-
-// `Copy` is what we call types that do not need to be borrowed. This is very
-// similar to pass-by-value in C/C++. Basic types (integers, floats, etc.) are
-// all `Copy`. Fancier things like `String`s are "not `Copy`" because we want
-// to borrow those usually. We cannot manually implement `Copy`, it is just a
-// signal to the compiler. Any type that is `Copy` must also implement `Clone`.
-#[derive(Debug, PartialEq, Clone, Copy)]
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-impl Point {
-    #[allow(dead_code)]
-    pub fn abs_dist(&self, other: &Self) -> f64 {
-        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
-    }
-
-    pub fn new(x: f64, y: f64) -> Self {
-        Point { x, y }
-    }
-}
-
-// `Debug` is for dirty, exhaustive, and specific output; the kind that the
-// compiler can come up with. If we want something that looks nicer, we use
-// another trait, `Display`. This one cannot be `#[derive()]`d, since asthetics
-// are not something the compiler cares about, so we implement it ourselves.
-impl fmt::Display for Point {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "({:.3}, {:.3})", self.x, self.y)
-    }
-}
-
-// https://stackoverflow.com/a/75477884/17443903
-// I think this might stall on an empty iterator...not sure
+/// An iterator function that transposes the order of iteration based on
+/// [this StackOverflow answer](https://stackoverflow.com/a/75477884/17443903).
+/// I think this might stall on an empty iterator...not sure
 pub struct TransposeIter<I, T>
 where
     I: IntoIterator<Item = T>,
@@ -57,6 +43,7 @@ where
     iterators: Vec<I::IntoIter>,
 }
 
+#[allow(missing_docs)]
 pub trait TransposableIter<I, T>
 where
     Self: Sized,
