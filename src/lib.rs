@@ -1,7 +1,3 @@
-//! This is the 2023/2024 senior capstone project for Team CyberGrape, which is
-//! comprised of Ayda Aricanli, Skylar Gilfeather, Liam Strand, and Tyler
-//! Thompson.
-//!
 //! CyberGrape consists of a system of tactile blocks that represent audio
 //! sources, or audio blocks, that track their angle and movement relative
 //! to a central block, called the listener block. As audio blocks and the
@@ -15,6 +11,10 @@
 //!
 //! You can find our [final report](report) in this documentation site.
 //!
+//! This is the 2023/2024 senior capstone project for Team CyberGrape, which is
+//! comprised of Ayda Aricanli, Skylar Gilfeather, Liam Strand, and Tyler
+//! Thompson.
+
 #![warn(missing_docs)]
 pub mod args;
 pub mod component;
